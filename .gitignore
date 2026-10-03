@@ -28,3 +28,7 @@ dist-ssr
 
 # staging folder for the hosted (static) build
 /deploy/
+
+# local test output and scratch files
+/.scratch/
+/test-results/

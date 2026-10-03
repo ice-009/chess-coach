@@ -788,6 +788,13 @@ button.stat:hover { background: #2d2b28; }
   .more-panel .side-link { flex-direction: column; gap: 4px; padding: 12px 0; font-size: 0.75rem; border-radius: 8px; display: flex; }
 }
 @media (max-width: 760px) {
+  /* phones: the board comes first; page intros hide and tab rows scroll sideways instead of wrapping */
+  .hide-intro-sm > p { display: none; }
+  .seg.scroll-sm { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+  .seg.scroll-sm::-webkit-scrollbar { display: none; }
+  .seg.scroll-sm button { flex: 0 0 auto; white-space: nowrap; }
+}
+@media (max-width: 760px) {
   /* keep the puzzle board above the fold: theme chips scroll sideways */
   .theme-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
   .theme-chips .chip, .theme-chips .chip-select { flex: 0 0 auto; }

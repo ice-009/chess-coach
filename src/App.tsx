@@ -25,7 +25,7 @@ export default function App() {
       page = <LearnPage lessonId={a} />;
       break;
     case 'openings':
-      page = <OpeningsPage openingId={a} lineId={b} mode={query.get('mode') ?? 'study'} />;
+      page = <OpeningsPage key={query.get('view') ?? ''} openingId={a} lineId={b} mode={query.get('mode') ?? 'study'} view={query.get('view') ?? undefined} />;
       break;
     case 'masters':
       page = <MastersPage classicId={a === 'classic' ? b : undefined} />;

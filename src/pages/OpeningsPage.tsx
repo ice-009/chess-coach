@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Square } from 'chess.js';
-import { GROUPS, OPENINGS, findOpening } from '../data/openings';
+import { GROUPS, OPENINGS, findOpening, groupTitle } from '../data/openings';
+import { ENCYCLOPEDIA, ENC_GROUPS } from '../data/encyclopedia';
 import type { Opening, OpeningLine } from '../data/openings';
 import { parseLine } from '../lib/chess';
 import type { MoveNode } from '../lib/chess';
@@ -73,7 +74,10 @@ function Study({ opening, moves }: { opening: Opening; moves: MoveNode[] }) {
           )}
         </div>
         <MoveText moves={moves} ply={ply} onSelect={setPly} showComments />
-        <button onClick={() => navigate(`explore?fen=${encodeURIComponent(fenAt(moves, ply))}`)}>Explore this position with the engine →</button>
+        <div className="row">
+          <button onClick={() => navigate(`explore?fen=${encodeURIComponent(fenAt(moves, ply))}`)}>Analyse with the engine →</button>
+          <button onClick={() => navigate(`database?line=${encodeURIComponent(moves.slice(0, ply).map((m) => m.san).join(','))}`)}>Master games from here →</button>
+        </div>
       </div>
     </>
   );
@@ -163,15 +167,16 @@ function OpeningView({ opening, lineId, mode }: { opening: Opening; lineId?: str
   const moves = useMemo(() => parseLine(line.moves), [line.moves]);
   const { stats, bump } = useDrillStats();
   const fitRef = useFitTop<HTMLDivElement>();
+  const encyclopedia = opening.group.startsWith('enc-');
   const go = (l: string, m: string) => navigate(`openings/${opening.id}/${l}?mode=${m}`);
 
   return (
     <div>
-      <button onClick={() => navigate('openings')}>← All openings</button>
+      <button onClick={() => navigate(encyclopedia ? 'openings?view=encyclopedia' : 'openings')}>← {encyclopedia ? 'Encyclopedia' : 'All openings'}</button>
       {/* title and controls, then board + drill/study panel, then the background reading (placed by CSS grid areas) */}
       <div className="opening-layout" ref={fitRef}>
         <div className="op-head">
-          <div className="eyebrow">{GROUPS.find((g) => g.id === opening.group)?.title} · ECO {opening.eco} · you play {opening.side}</div>
+          <div className="eyebrow">{groupTitle(opening.group)} · ECO {opening.eco} · {encyclopedia ? `seen from ${opening.side}’s side` : `you play ${opening.side}`}</div>
           <h1>{opening.name}</h1>
           <div className="line-tabs">
             {opening.lines.map((l) => (
@@ -204,22 +209,38 @@ function OpeningView({ opening, lineId, mode }: { opening: Opening; lineId?: str
   );
 }
 
-export function OpeningsPage({ openingId, lineId, mode }: { openingId?: string; lineId?: string; mode: string }) {
+export function OpeningsPage({ openingId, lineId, mode, view }: { openingId?: string; lineId?: string; mode: string; view?: string }) {
   const { stats } = useDrillStats();
   if (openingId) {
     const o = findOpening(openingId);
     return o ? <OpeningView opening={o} lineId={lineId} mode={mode} /> : <div className="error">Opening not found.</div>;
   }
+  const encyclopedia = view === 'encyclopedia';
+  const groups = encyclopedia ? ENC_GROUPS : GROUPS;
+  const list = encyclopedia ? ENCYCLOPEDIA : OPENINGS;
+  const lineCount = ENCYCLOPEDIA.reduce((n, o) => n + o.lines.length, 0);
   return (
     <div>
       <h1>Openings</h1>
-      <p className="muted">A complete, beginner-friendly repertoire. <b>Study</b> a line to understand the ideas, then <b>Drill</b> it: you play your side, the computer plays the other, until you know it cold.</p>
-      {GROUPS.map((g) => (
+      <div className="seg">
+        <button className={!encyclopedia ? 'on' : ''} onClick={() => navigate('openings')}>⭐ My repertoire</button>
+        <button className={encyclopedia ? 'on' : ''} onClick={() => navigate('openings?view=encyclopedia')}>📚 Encyclopedia</button>
+      </div>
+      {encyclopedia ? (
+        <p className="muted">
+          The main lines of {ENCYCLOPEDIA.length} major openings ({lineCount} lines), explained move by move, with the plans for both sides. Every move is
+          played by masters (checked against the master database) and sound (checked by Stockfish). <b>Study</b> a line, then <b>Drill</b> it, or open
+          the <b>master games</b> that followed it.
+        </p>
+      ) : (
+        <p className="muted">A complete, beginner-friendly repertoire. <b>Study</b> a line to understand the ideas, then <b>Drill</b> it: you play your side, the computer plays the other, until you know it cold.</p>
+      )}
+      {groups.map((g) => (
         <section key={g.id} className="chapter">
           <h2>{g.title}</h2>
           <p className="muted">{g.blurb}</p>
           <div className="cards">
-            {OPENINGS.filter((o) => o.group === g.id).map((o) => {
+            {list.filter((o) => o.group === g.id).map((o) => {
               const drilled = o.lines.filter((l) => stats[l.id]).length;
               return (
                 <button key={o.id} className="card" onClick={() => navigate(`openings/${o.id}`)}>

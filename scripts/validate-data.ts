@@ -16,6 +16,18 @@ for (const o of OPENINGS) for (const l of o.lines) {
 }
 if (bad) process.exit(1);
 
+import { ENCYCLOPEDIA } from '../src/data/encyclopedia.ts';
+for (const o of ENCYCLOPEDIA) for (const l of o.lines) {
+  try {
+    const moves = parseLine(l.moves);
+    console.log(`ok  ${l.id.padEnd(28)} ${moves.length} plies`);
+  } catch (e) {
+    bad++;
+    console.log(`BAD ${l.id}: ${(e as Error).message}`);
+  }
+}
+if (bad) process.exit(1);
+
 import { CLASSICS } from '../src/data/classics.ts';
 for (const g of CLASSICS) {
   try {

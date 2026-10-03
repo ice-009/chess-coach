@@ -283,11 +283,11 @@ export function PracticePage({ sub, arg, fen, color }: { sub?: string; arg?: str
   const active = sub === 'drill' ? 'drills' : (sub ?? '');
   return (
     <div>
-      <div className="page-head">
+      <div className="page-head hide-intro-sm">
         <h1>Practice</h1>
         <p className="muted">Play, drill the endgames that decide games, and sharpen your board vision.</p>
       </div>
-      <div className="seg">
+      <div className="seg scroll-sm">
         {TABS.map((t) => (
           <button key={t.id} className={active === t.id ? 'on' : ''} onClick={() => navigate(`practice${t.id ? `/${t.id}` : ''}`)}>{t.label}</button>
         ))}

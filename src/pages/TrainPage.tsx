@@ -159,11 +159,11 @@ export function TrainPage({ tab = '', arg }: { tab?: string; arg?: string }) {
   const active = tab === 'theme' ? '' : tab;
   return (
     <div>
-      <div className="page-head">
+      <div className="page-head hide-intro-sm">
         <h1>Puzzles</h1>
         <p className="muted">Tactics decide most games below 2000. A little every day beats a lot once a week.</p>
       </div>
-      <div className="seg">
+      <div className="seg scroll-sm">
         {TABS.map((t) => (
           <button key={t.id} className={active === t.id ? 'on' : ''} onClick={() => navigate(`train${t.id ? `/${t.id}` : ''}`)}>
             {t.label}

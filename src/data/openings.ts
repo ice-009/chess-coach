@@ -1,5 +1,6 @@
 // Opening repertoire. Lines are SAN separated by spaces; {braces} attach a comment to the move before them.
 // Every line is validated with chess.js by scripts/validate-data.ts.
+import { ENCYCLOPEDIA, ENC_GROUPS } from './encyclopedia.ts';
 
 export type Side = 'white' | 'black';
 
@@ -12,7 +13,7 @@ export interface OpeningLine {
 export interface Opening {
   id: string;
   name: string;
-  group: 'white' | 'vs-e4' | 'vs-d4' | 'traps';
+  group: string; // a GROUPS id (repertoire) or an ENC_GROUPS id (encyclopedia)
   side: Side; // the side YOU play in this opening
   eco: string;
   summary: string;
@@ -20,7 +21,7 @@ export interface Opening {
   lines: OpeningLine[];
 }
 
-export const GROUPS: { id: Opening['group']; title: string; blurb: string }[] = [
+export const GROUPS: { id: string; title: string; blurb: string }[] = [
   { id: 'white', title: 'Your repertoire as White', blurb: 'Open with 1.e4 and know an answer to every common reply. (1.d4 players: see the London.)' },
   { id: 'vs-e4', title: 'As Black against 1.e4', blurb: 'Answer 1.e4 with 1...e5, the most classical and instructive defence, and learn the main ways White continues.' },
   { id: 'vs-d4', title: 'As Black against 1.d4', blurb: 'Answer 1.d4 with 1...d5 and the solid Queen’s Gambit Declined set-up.' },
@@ -460,5 +461,8 @@ export const OPENINGS: Opening[] = [
 ];
 
 export function findOpening(id: string): Opening | undefined {
-  return OPENINGS.find((o) => o.id === id);
+  return OPENINGS.find((o) => o.id === id) ?? ENCYCLOPEDIA.find((o) => o.id === id);
 }
+
+/** Title of a repertoire or encyclopedia group. */
+export const groupTitle = (id: string) => [...GROUPS, ...ENC_GROUPS].find((g) => g.id === id)?.title ?? '';

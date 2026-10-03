@@ -140,7 +140,6 @@ export function RatedTraining({ theme, chips, base = 'train/theme', footer }: { 
           {themeInfo(theme)?.lesson && <> <a href={`#/learn/${themeInfo(theme)!.lesson}`}>Read the lesson →</a></>}
         </p>
       )}
-      {footer}
       {error && <div className="error">{error}</div>}
       {puzzle && (
         <PuzzlePlayer key={puzzle.id} puzzle={puzzle} onDone={onDone}>
@@ -173,6 +172,7 @@ export function RatedTraining({ theme, chips, base = 'train/theme', footer }: { 
           )}
         </PuzzlePlayer>
       )}
+      {footer}
       <RatingProgress key={session.total} />
     </div>
   );
