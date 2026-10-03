@@ -11,7 +11,6 @@ import { Board } from '../components/Board';
 import { EvalBar } from '../components/EvalBar';
 import { MasterExplorer } from '../components/MasterExplorer';
 import { fetchStatus } from '../lib/masterDb';
-import { STATIC_HOST } from '../lib/host';
 
 const START = new Chess().fen();
 const DEPTH = 18;
@@ -38,7 +37,6 @@ export function ExplorePage({ initialFen }: { initialFen?: string }) {
   const [fenError, setFenError] = useState('');
   const [dbReady, setDbReady] = useState(false);
   useEffect(() => {
-    if (STATIC_HOST) return; // no master database on the hosted site
     fetchStatus().then((st) => setDbReady(st.ready), () => setDbReady(false));
   }, []);
 

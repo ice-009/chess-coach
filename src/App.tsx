@@ -13,6 +13,7 @@ const DatabasePage = lazy(() => import('./pages/DatabasePage').then((m) => ({ de
 const InsightsPage = lazy(() => import('./pages/InsightsPage').then((m) => ({ default: m.InsightsPage })));
 const PracticePage = lazy(() => import('./pages/PracticePage').then((m) => ({ default: m.PracticePage })));
 const TrainPage = lazy(() => import('./pages/TrainPage').then((m) => ({ default: m.TrainPage })));
+const OfflinePage = lazy(() => import('./pages/OfflinePage').then((m) => ({ default: m.OfflinePage })));
 
 export default function App() {
   const { parts, query } = useRoute();
@@ -46,6 +47,9 @@ export default function App() {
       break;
     case 'train':
       page = <TrainPage key={a ?? ''} tab={a} arg={b} />;
+      break;
+    case 'offline':
+      page = <OfflinePage />;
       break;
     default:
       page = <HomePage />;

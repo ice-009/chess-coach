@@ -12,11 +12,14 @@
     "start": "vite build && vite preview --port 5173 --open",
     "ipad": "node --experimental-strip-types --no-warnings scripts/ipad.ts",
     "db:update": "node --experimental-strip-types --no-warnings scripts/db/update.ts",
+    "db:export": "node --experimental-strip-types --no-warnings scripts/db/export.ts",
     "puzzles:update": "node --experimental-strip-types --no-warnings scripts/puzzles/build.ts",
-    "build:static": "tsc -b && VITE_STATIC_HOST=1 vite build && node --experimental-strip-types --no-warnings scripts/puzzles/export-static.ts dist/puzzles"
+    "build:static": "tsc -b && VITE_STATIC_HOST=1 vite build && node --experimental-strip-types --no-warnings scripts/puzzles/export-static.ts dist/puzzles",
+    "deploy": "node --experimental-strip-types --no-warnings scripts/deploy.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
+    "@sqlite.org/sqlite-wasm": "^3.53.4-build2",
     "chess.js": "^1.4.0",
     "react": "^19.2.8",
     "react-chessboard": "^5.12.1",

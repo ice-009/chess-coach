@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getPlayer, searchPlayers } from '../lib/masterDb';
+import { getPlayer, searchPlayers, topPlayers } from '../lib/masterDb';
 import type { DbPlayer, Dossier, Score } from '../lib/masterDb';
 import { navigate } from '../lib/router';
 import { WdlBar } from '../components/WdlBar';
@@ -28,7 +28,7 @@ export function DbPlayers() {
   const [top, setTop] = useState<DbPlayer[]>([]);
 
   useEffect(() => {
-    fetch('/api/db/players?top=1').then((r) => r.json()).then(setTop, () => undefined);
+    topPlayers().then(setTop, () => undefined);
   }, []);
   useEffect(() => {
     if (q.trim().length < 2) {

@@ -37,7 +37,9 @@ const write = (file: string, data: unknown) => {
   bytes += s.length;
   fs.writeFileSync(path.join(out, file), s);
 };
-for (const [b, list] of bands) write(`b${b}.json`, list);
-for (const [c, map] of idx) write(`idx/${c}.json`, map);
-write('manifest.json', { count: rows.length, bands: Object.fromEntries([...bands].map(([b, l]) => [b, l.length])) });
+const files: string[] = [];
+for (const [b, list] of bands) write((files[files.length] = `b${b}.json`), list);
+for (const [c, map] of idx) write((files[files.length] = `idx/${c}.json`), map);
+// files + bytes let the app save every puzzle for offline use in one go
+write('manifest.json', { count: rows.length, bands: Object.fromEntries([...bands].map(([b, l]) => [b, l.length])), files, bytes });
 console.log(`exported ${rows.length} puzzles: ${bands.size} band files, ${idx.size} index files, ${(bytes / 1e6).toFixed(1)} MB`);

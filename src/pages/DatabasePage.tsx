@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
-import { explore, fetchStatus, startBuild } from '../lib/masterDb';
+import { ON_DEVICE, explore, fetchStatus, startBuild } from '../lib/masterDb';
 import type { DbStatus } from '../lib/masterDb';
 import { navigate } from '../lib/router';
-import { STATIC_HOST } from '../lib/host';
 import { Board } from '../components/Board';
 import { MasterExplorer } from '../components/MasterExplorer';
+import { DeviceDatabase } from '../components/DeviceDatabase';
 import { DbGamesSearch } from './DbGamesSearch';
 import { DbPlayerDossier, DbPlayers } from './DbPlayer';
 import { DbGameViewer } from './DbGameViewer';
@@ -203,30 +203,8 @@ const TABS = [
   { id: 'players', label: 'Players' },
 ];
 
-/** The hosted site has no master database: its main source is licensed for personal use only. */
-function LocalOnly() {
-  return (
-    <div>
-      <div className="page-head">
-        <h1>Master Database</h1>
-      </div>
-      <div className="db-setup">
-        <h2>Available in the app on your computer</h2>
-        <p>
-          The master database (opening explorer, game search and player dossiers over hundreds of thousands of master games) is built on
-          your own computer from The Week in Chess, which is free for personal use only, so it can’t be published on this website.
-        </p>
-        <p className="muted">
-          To use it, run the app locally (<code>npm start</code>) and press <b>Build database</b>. Meanwhile, the <a href="#/masters">Masters</a> page has the
-          great classic games with notes, and the live games of every titled player on chess.com.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export function DatabasePage(props: { sub?: string; arg?: string; query: URLSearchParams }) {
-  return STATIC_HOST ? <LocalOnly /> : <LocalDatabase {...props} />;
+  return <LocalDatabase {...props} />;
 }
 
 function LocalDatabase({ sub, arg, query }: { sub?: string; arg?: string; query: URLSearchParams }) {
@@ -261,12 +239,15 @@ function LocalDatabase({ sub, arg, query }: { sub?: string; arg?: string; query:
             <p className="muted">Your own ChessBase-style library of over-the-board master games.</p>
           )}
         </div>
-        {status.ready && !status.build.running && (
+        {status.ready && !status.build.running && !ON_DEVICE && (
           <button className="btn-secondary" onClick={() => setShowUpdate((v) => !v)}>{showUpdate ? 'Close' : 'Update / expand'}</button>
         )}
+        {status.ready && ON_DEVICE && <a className="btn-ghost" href="#/offline">On this device · Manage</a>}
       </div>
 
-      {(!status.ready || status.build.running || showUpdate) && <DbSetup status={status} onStarted={refresh} update={status.ready} />}
+      {/* the hosted site has no server: the database is loaded onto the device instead of built */}
+      {ON_DEVICE && !status.ready && <DeviceDatabase onChange={() => refresh()} />}
+      {!ON_DEVICE && (!status.ready || status.build.running || showUpdate) && <DbSetup status={status} onStarted={refresh} update={status.ready} />}
 
       {status.ready && (
         <>

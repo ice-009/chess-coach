@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { navigate } from '../lib/router';
+import { STATIC_HOST } from '../lib/host';
 import { NavIcons } from './icons';
 
 const TABS = [
@@ -13,6 +14,8 @@ const TABS = [
   { id: 'masters', icon: 'masters', label: 'Masters' },
   { id: 'database', icon: 'database', label: 'Database' },
   { id: 'explore', icon: 'explore', label: 'Analysis' },
+  // the hosted site can save itself and the master database on the device
+  ...(STATIC_HOST ? [{ id: 'offline', icon: 'offline', label: 'Offline' }] : []),
 ];
 
 /** Left sidebar on desktop; on phones a bottom bar with the main tabs plus a "More" sheet. */

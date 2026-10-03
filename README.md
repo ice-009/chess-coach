@@ -16,7 +16,23 @@ A static build runs at https://chess-coach-psi-tawny.vercel.app: game review, pu
 
 ```bash
 npm run build:static   # dist/ with puzzles exported as static JSON shards (needs data/puzzles.db)
+npm run deploy         # build:static, then publish deploy/chess-coach to Vercel production
 ```
+
+## Offline on your iPad (e.g. on a flight)
+
+The hosted site can save everything on the iPad itself, so it works with no internet at all:
+
+1. On the Mac: `npm run db:export` writes `ChessCoach-masters.db` (about 0.75 GB) to your Desktop. `--otb` makes an over-the-board-only copy, about half the size.
+2. AirDrop it to the iPad and choose **Save to Files**.
+3. On the iPad, open the site in Safari, **Share → Add to Home Screen**, open it from the Home Screen, go to **Offline**:
+   - the app (pages, Stockfish, SQLite) is saved automatically,
+   - **Save all puzzles** keeps all 280,000 puzzles (48 MB),
+   - **Choose the database file** copies the master database into the iPad's private browser storage (it is never uploaded; the licence is personal use only).
+4. Open your chess.com games once while online: game lists and games you opened stay available.
+5. Turn on Airplane Mode and check.
+
+The database runs on the iPad with SQLite compiled to WebAssembly (`src/lib/localDb.worker.ts`), using the same queries as the Mac's server (`src/lib/dbQueries.ts`). It needs Safari on iPadOS 17 or newer, outside Private Browsing.
 
 ## Use it on your iPad (with the master database)
 

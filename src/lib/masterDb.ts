@@ -1,4 +1,10 @@
-// Client for the local master-games database API (server/dbApi.ts).
+// Client for the master-games database: the Mac's local server (server/dbApi.ts), or on the hosted site the
+// copy stored on this device (src/lib/localDb.ts). Both run the same queries (src/lib/dbQueries.ts).
+import { STATIC_HOST } from './host';
+import { localQuery, localStatus } from './localDb';
+
+/** The hosted site has no server, so its database (if any) lives on this device. */
+export const ON_DEVICE = STATIC_HOST;
 
 export interface DbGame {
   id: number;
@@ -84,7 +90,21 @@ async function json<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export const fetchStatus = () => fetch('/api/db/status').then((r) => json<DbStatus>(r));
+const IDLE = { state: 'idle', step: '', progress: 0, running: false };
+export const fetchStatus = (): Promise<DbStatus> =>
+  ON_DEVICE ? localStatus().then((st) => ({ ready: st.ready, meta: st.meta, build: IDLE })) : fetch('/api/db/status').then((r) => json<DbStatus>(r));
+
+/** One read-only API route, answered by the server or by the on-device database. */
+async function api<T>(route: string, params: Record<string, string | number> = {}, body?: unknown, signal?: AbortSignal): Promise<T> {
+  const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v !== 0).map(([k, v]) => [k, String(v)])).toString();
+  if (ON_DEVICE) {
+    const [status, data] = await localQuery(route, q, body);
+    if (status !== 200) throw new Error((data as { error?: string }).error || `Database error (${status})`);
+    return data as T;
+  }
+  const init: RequestInit = body === undefined ? { signal } : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal };
+  return json<T>(await fetch(`/api/db/${route}${q ? `?${q}` : ''}`, init));
+}
 
 export function startBuild(issues: number) {
   return fetch('/api/db/build', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ issues }) }).then((r) => json<{ started: boolean }>(r));
@@ -95,19 +115,16 @@ export async function explore(fens: string[], minElo: number, online: boolean, s
   const key = `${minElo}|${online}|${fens.join(';')}`;
   const hit = exploreCache.get(key);
   if (hit) return hit;
-  const res = await fetch('/api/db/explore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fens, minElo, online }), signal });
-  const data = await json<ExploreResult>(res);
+  const data = await api<ExploreResult>('explore', {}, { fens, minElo, online }, signal);
   if (exploreCache.size > 500) exploreCache.clear();
   exploreCache.set(key, data);
   return data;
 }
 
-export const searchGames = (params: Record<string, string | number>) => {
-  const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v !== 0).map(([k, v]) => [k, String(v)]));
-  return fetch(`/api/db/games?${q}`).then((r) => json<{ games: DbGame[]; total: number; capped: boolean; page: number }>(r));
-};
-export const getGame = (id: number) => fetch(`/api/db/game?id=${id}`).then((r) => json<DbGame>(r));
-export const searchPlayers = (q: string, signal?: AbortSignal) => fetch(`/api/db/players?q=${encodeURIComponent(q)}`, { signal }).then((r) => json<DbPlayer[]>(r));
-export const getPlayer = (key: string, online: boolean) => fetch(`/api/db/player?key=${encodeURIComponent(key)}${online ? '&online=1' : ''}`).then((r) => json<Dossier>(r));
+export const searchGames = (params: Record<string, string | number>) => api<{ games: DbGame[]; total: number; capped: boolean; page: number }>('games', params);
+export const getGame = (id: number) => api<DbGame>('game', { id });
+export const searchPlayers = (q: string, signal?: AbortSignal) => api<DbPlayer[]>('players', { q }, undefined, signal);
+export const topPlayers = () => api<DbPlayer[]>('players', { top: 1 });
+export const getPlayer = (key: string, online: boolean) => api<Dossier>('player', { key, online: online ? 1 : 0 });
 
 export const resultText = (r: number) => (r === 1 ? '1-0' : r === -1 ? '0-1' : '½-½');

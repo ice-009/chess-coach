@@ -7,6 +7,7 @@ import { dueReviews, getRating } from '../lib/puzzles';
 import { getProfile } from '../lib/chesscom';
 import { navigate } from '../lib/router';
 import { KEYS, getMe, load, save } from '../lib/storage';
+import { STATIC_HOST } from '../lib/host';
 
 // activity strip: ordinal one-hue ramp, validated against the panel surface (all steps pass, light end 2.56:1)
 const RAMP = ['#4d6b35', '#5f8a3c', '#76a845', '#97cc5c'];
@@ -218,6 +219,12 @@ export function HomePage() {
           <div className="card-title">📚 Master database</div>
           <div className="card-body">See how grandmasters play your openings.</div>
         </button>
+        {STATIC_HOST && (
+          <button className="card" onClick={() => navigate('offline')}>
+            <div className="card-title">✈️ Study offline</div>
+            <div className="card-body">Save the app, every puzzle and the master database on this device, then use them on a flight.</div>
+          </button>
+        )}
       </div>
     </div>
   );
