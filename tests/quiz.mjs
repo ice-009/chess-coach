@@ -22,7 +22,7 @@ const key = (fen) => fen.split(' ').slice(0, 4).join(' ');
 function bookMoves(openingId, fen) {
   const o = ENCYCLOPEDIA.find((x) => x.id === openingId);
   const out = [];
-  for (const l of o.lines) for (const m of parseLine(l.moves)) if (key(m.fenBefore) === key(fen)) out.push({ uci: m.uci, line: l.name });
+  for (const l of o.lines) for (const m of parseLine(l.moves)) if (key(m.fenBefore) === key(fen)) out.push({ uci: m.uci, line: l.name, id: l.id });
   return out;
 }
 async function click(uci) {
@@ -56,8 +56,9 @@ async function session(openingId, color, mistakeInRound = -1) {
       }
       const options = bookMoves(openingId, fen);
       if (!options.length) throw new Error(`no book move found in ${fen}`);
-      // like a player who knows every line: at a branch, follow a line not played yet this session
-      const pick = options.find((o) => !results.some((r) => r.includes(`, ${o.line} (as`))) ?? options[0];
+      // like a player who knows every line: at a branch, follow the line the computer is playing
+      const target = await page.locator('.quiz-round').getAttribute('data-line');
+      const pick = options.find((o) => o.id === target) ?? options[0];
       await click(pick.uci);
       await page.waitForTimeout(250);
     }

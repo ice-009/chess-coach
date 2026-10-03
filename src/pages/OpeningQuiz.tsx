@@ -85,7 +85,7 @@ function QuizRound({ line, color, lines, onDone }: { line: QuizLine; color: Colo
   const arrows = useMemo(() => (myTurn && wrong >= 2 ? [target.moves[ply].uci] : []), [myTurn, wrong, target, ply]);
 
   return (
-    <div className="puzzle-play quiz-round" ref={fitRef}>
+    <div className="puzzle-play quiz-round" ref={fitRef} data-line={target.id /* for tests: the line the computer is playing */}>
       <div className="puzzle-board">
         <Board id="quiz-board" fen={fen} orientation={color === 'w' ? 'white' : 'black'} onMove={done ? undefined : onMove} squares={squares} arrows={arrows} maxWidth={600} />
       </div>
