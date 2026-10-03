@@ -23,8 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# master database (downloaded sources + built SQLite), personal use only
-data/
+# master database and puzzle sources (downloaded + built SQLite), personal use only; root folder only, not src/data
+/data/
 
 # staging folder for the hosted (static) build
-deploy/
+/deploy/
