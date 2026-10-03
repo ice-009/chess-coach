@@ -31,17 +31,21 @@ self.addEventListener('activate', (event) => {
 
 const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
 
-/** Fresh when the network answers in time, the saved copy otherwise (and on flaky in-flight Wi-Fi). */
+/**
+ * Fresh when the network answers in time; on slow or flaky Wi-Fi the saved copy (while the network keeps
+ * refreshing it in the background); with nothing saved yet, keep waiting for the network.
+ */
 async function networkFirst(cacheName, request, key, ms) {
   const cache = await caches.open(cacheName);
-  try {
-    const res = await Promise.race([fetch(request), timeout(ms)]);
+  const net = fetch(request).then(async (res) => {
     if (res.ok) await cache.put(key, res.clone());
     return res;
-  } catch (err) {
+  });
+  try {
+    return await Promise.race([net, timeout(ms)]);
+  } catch {
     const hit = await cache.match(key, { ignoreSearch: key === '/' });
-    if (hit) return hit;
-    throw err;
+    return hit || net;
   }
 }
 
