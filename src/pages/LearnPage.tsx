@@ -45,6 +45,48 @@ function SectionView({ s, id }: { s: Section; id: string }) {
   );
 }
 
+type Item = { s: Section; i: number };
+/** A block of reading with the boards that illustrate it, or an exercise on its own. */
+type Group = { kind: 'row'; text: Item[]; boards: Item[] } | { kind: 'exercise'; item: Item };
+
+function groupSections(sections: Section[]): Group[] {
+  const out: Group[] = [];
+  let row: Extract<Group, { kind: 'row' }> | null = null;
+  sections.forEach((s, i) => {
+    if (s.kind === 'exercise') {
+      out.push({ kind: 'exercise', item: { s, i } });
+      row = null;
+    } else if (s.kind === 'text') {
+      if (!row || row.boards.length) out.push((row = { kind: 'row', text: [], boards: [] })); // text after a board starts a new block
+      row.text.push({ s, i });
+    } else {
+      if (!row) out.push((row = { kind: 'row', text: [], boards: [] }));
+      row.boards.push({ s, i });
+    }
+  });
+  return out;
+}
+
+/** Wide screens: one or two boards sit beside their text; more boards form a grid under it. */
+function LessonGroup({ g, lessonId }: { g: Group; lessonId: string }) {
+  if (g.kind === 'exercise') return <SectionView s={g.item.s} id={`${lessonId}-${g.item.i}`} />;
+  const split = g.text.length > 0 && g.boards.length > 0 && g.boards.length <= 2;
+  return (
+    <div className={`lesson-row ${split ? 'split' : ''}`}>
+      {g.text.length > 0 && (
+        <div className="lesson-text">
+          {g.text.map(({ s, i }) => <SectionView key={i} s={s} id={`${lessonId}-${i}`} />)}
+        </div>
+      )}
+      {g.boards.length > 0 && (
+        <div className={split ? 'lesson-media' : 'lesson-gallery'}>
+          {g.boards.map(({ s, i }) => <SectionView key={i} s={s} id={`${lessonId}-${i}`} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LessonView({ lessonId }: { lessonId: string }) {
   const found = findLesson(lessonId);
   const { done, mark } = useLessonsDone();
@@ -59,8 +101,8 @@ function LessonView({ lessonId }: { lessonId: string }) {
       <div className="eyebrow">{chapter.title}</div>
       <h1>{lesson.title}</h1>
       <div className="muted small">{lesson.minutes} min read{done.includes(lesson.id) ? ' · ✓ completed' : ''}</div>
-      {lesson.sections.map((s, i) => (
-        <SectionView key={`${lesson.id}-${i}`} s={s} id={`${lesson.id}-${i}`} />
+      {groupSections(lesson.sections).map((g, k) => (
+        <LessonGroup key={`${lesson.id}-${k}`} g={g} lessonId={lesson.id} />
       ))}
       <div className="lesson-footer">
         <button

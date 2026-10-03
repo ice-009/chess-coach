@@ -175,7 +175,7 @@ export function InsightsPage() {
             {recs.length === 0 ? (
               <p className="muted">{analyzed.length ? 'No clear weakness stands out. Keep training puzzles daily!' : 'Analyse your recent games below to get personal recommendations.'}</p>
             ) : (
-              <div className="cards">
+              <div className="cards fill">
                 {recs.map((r, i) => (
                   <a key={r.title} className="card rec-card" href={r.href}>
                     <span className="rec-rank">{i + 1}</span>
