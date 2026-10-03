@@ -72,3 +72,15 @@ for (const [theme, id] of Object.entries(THEME_LESSON)) {
   }
 }
 if (bad) process.exit(1);
+
+// puzzle themes (src/lib/puzzles.ts) link to lessons too; that file imports browser code, so read it as text
+import fs from 'node:fs';
+const puzzleSrc = fs.readFileSync(new URL('../src/lib/puzzles.ts', import.meta.url), 'utf8');
+for (const [, id] of puzzleSrc.matchAll(/lesson: '([a-z0-9-]+)'/g)) {
+  if (lessonIds.has(id)) console.log(`ok  puzzle theme lesson ${id}`);
+  else {
+    bad++;
+    console.log(`BAD puzzle theme links to missing lesson "${id}"`);
+  }
+}
+if (bad) process.exit(1);

@@ -40,6 +40,17 @@ const write = (file: string, data: unknown) => {
 const files: string[] = [];
 for (const [b, list] of bands) write((files[files.length] = `b${b}.json`), list);
 for (const [c, map] of idx) write((files[files.length] = `idx/${c}.json`), map);
+// rare themes (checkmate patterns, minor-piece endgames…) get their own index, so the app finds one without
+// downloading every band: [id, band, rating] for each puzzle of the theme
+fs.mkdirSync(path.join(out, 't'), { recursive: true });
+const themeIndex: string[] = [];
+const counts = db.prepare('SELECT theme, COUNT(*) n FROM puzzle_themes GROUP BY theme').all() as { theme: string; n: number }[];
+for (const { theme, n } of counts) {
+  if (n > 20000 || !/^[A-Za-z0-9]+$/.test(theme)) continue;
+  const list = db.prepare('SELECT id, rating FROM puzzle_themes WHERE theme = ? ORDER BY rating').all(theme) as { id: string; rating: number }[];
+  write((files[files.length] = `t/${theme}.json`), list.map((r) => [r.id, Math.floor(r.rating / 50), r.rating]));
+  themeIndex.push(theme);
+}
 // files + bytes let the app save every puzzle for offline use in one go
-write('manifest.json', { count: rows.length, bands: Object.fromEntries([...bands].map(([b, l]) => [b, l.length])), files, bytes });
+write('manifest.json', { count: rows.length, bands: Object.fromEntries([...bands].map(([b, l]) => [b, l.length])), themeIndex, files, bytes });
 console.log(`exported ${rows.length} puzzles: ${bands.size} band files, ${idx.size} index files, ${(bytes / 1e6).toFixed(1)} MB`);

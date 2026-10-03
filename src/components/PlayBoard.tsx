@@ -8,8 +8,8 @@ import { useFitTop } from '../lib/useFitTop';
 import { Board } from './Board';
 
 export interface Goal {
-  type: 'mate' | 'promote' | 'draw';
-  maxMoves?: number; // mate / promote within this many of your moves
+  type: 'mate' | 'promote' | 'draw' | 'capture'; // capture: win every enemy piece and pawn (e.g. queen vs pawn)
+  maxMoves?: number; // mate / promote / capture within this many of your moves
   surviveMoves?: number; // draw: hold for this many of your moves
 }
 
@@ -78,11 +78,21 @@ export function PlayBoard({ startFen, userColor, level, goal, onFinish, children
         finish({ outcome: 'win', success: safe, reason: safe ? 'You promoted safely. Winning!' : 'You promoted, but the new queen can be taken.' }, s, f);
         return true;
       }
-      if (goal.type === 'draw' && !userMoved && /=Q/.test(lastSan)) {
-        finish({ outcome: 'loss', success: false, reason: 'The pawn promoted. This position should have been a draw.' }, s, f);
+      if ((goal.type === 'draw' || goal.type === 'capture') && !userMoved && /=Q/.test(lastSan)) {
+        // letting the pawn queen is fine when the new queen can be taken at once
+        const to = c.history({ verbose: true }).at(-1)?.to;
+        if (goal.type === 'capture' && to && c.attackers(to as Square, userColor).length > 0) return false;
+        finish({ outcome: 'loss', success: false, reason: goal.type === 'draw' ? 'The pawn promoted. This position should have been a draw.' : 'The pawn promoted. Keep checking until the king has to stand in front of its pawn.' }, s, f);
         return true;
       }
-      if ((goal.type === 'mate' || goal.type === 'promote') && goal.maxMoves && userMoved && mine >= goal.maxMoves) {
+      if (goal.type === 'capture' && userMoved) {
+        const enemy = userColor === 'w' ? 'b' : 'w';
+        if (!c.board().flat().some((p) => p && p.color === enemy && p.type !== 'k')) {
+          finish({ outcome: 'win', success: true, reason: 'You won the last pawn: now it is queen against a lone king, a sure win. Well done!' }, s, f);
+          return true;
+        }
+      }
+      if ((goal.type === 'mate' || goal.type === 'promote' || goal.type === 'capture') && goal.maxMoves && userMoved && mine >= goal.maxMoves) {
         finish({ outcome: 'draw', success: false, reason: `Out of moves: the goal was to finish within ${goal.maxMoves} moves. Try a more direct plan.` }, s, f);
         return true;
       }
@@ -189,6 +199,7 @@ export function PlayBoard({ startFen, userColor, level, goal, onFinish, children
                     {goal.type === 'mate' && `Checkmate within ${goal.maxMoves} moves (move ${userMoves} so far)`}
                     {goal.type === 'promote' && `Promote safely within ${goal.maxMoves} moves (move ${userMoves})`}
                     {goal.type === 'draw' && `Hold the draw for ${goal.surviveMoves} moves (move ${userMoves})`}
+                    {goal.type === 'capture' && `Win the pawn within ${goal.maxMoves} moves (move ${userMoves})`}
                   </div>
                 )}
               </div>

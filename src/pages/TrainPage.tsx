@@ -8,7 +8,7 @@ import { MovePuzzle } from '../components/MovePuzzle';
 import { CLASS_META } from '../lib/classMeta';
 import { sectionFen } from './LearnPage';
 import { PuzzleRush, PuzzleSetup, RatedTraining, ReviewQueue, usePuzzleStatus } from './PuzzleModes';
-import { dueReviews } from '../lib/puzzles';
+import { ENDGAME_THEMES, MATE_THEMES, dueReviews } from '../lib/puzzles';
 
 type Solved = Record<string, boolean>; // puzzle id → solved on first try
 
@@ -143,6 +143,8 @@ function LessonExercises() {
 
 const TABS = [
   { id: '', label: 'Rated puzzles' },
+  { id: 'endgames', label: 'Endgames' },
+  { id: 'mates', label: 'Checkmates' },
   { id: 'rush', label: 'Puzzle Rush' },
   { id: 'review', label: 'Review' },
   { id: 'mistakes', label: 'My mistakes' },
@@ -153,7 +155,7 @@ const TABS = [
 export function TrainPage({ tab = '', arg }: { tab?: string; arg?: string }) {
   const { status, refresh } = usePuzzleStatus();
   const due = dueReviews().length;
-  const needsDb = tab === '' || tab === 'theme' || tab === 'rush' || tab === 'review';
+  const needsDb = ['', 'theme', 'endgames', 'mates', 'rush', 'review'].includes(tab);
   const active = tab === 'theme' ? '' : tab;
   return (
     <div>
@@ -175,6 +177,22 @@ export function TrainPage({ tab = '', arg }: { tab?: string; arg?: string }) {
         <div className="page-loading"><span className="spinner" /></div>
       ) : tab === '' || tab === 'theme' ? (
         <RatedTraining key={arg ?? 'all'} theme={tab === 'theme' ? arg : undefined} />
+      ) : tab === 'endgames' ? (
+        <RatedTraining
+          key={`e-${arg ?? 'endgame'}`}
+          theme={arg ?? 'endgame'}
+          chips={ENDGAME_THEMES}
+          base="train/endgames"
+          footer={<p className="muted small">Want the theory first? Try the <a href="#/practice/drills">endgame drills</a> against the computer and the <a href="#/learn/kp-endgames">endgame lessons</a>.</p>}
+        />
+      ) : tab === 'mates' ? (
+        <RatedTraining
+          key={`m-${arg ?? 'mate'}`}
+          theme={arg ?? 'mate'}
+          chips={MATE_THEMES}
+          base="train/mates"
+          footer={<p className="muted small">The basic mates with a lone king (queen, rook, two bishops, bishop and knight) are in <a href="#/practice/drills">Practice → Endgame drills</a>.</p>}
+        />
       ) : tab === 'rush' ? (
         <PuzzleRush />
       ) : tab === 'review' ? (

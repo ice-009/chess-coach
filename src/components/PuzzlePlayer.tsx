@@ -126,7 +126,7 @@ export function PuzzlePlayer({ puzzle, onDone, showRating = true, compact, failF
 
   const done = status === 'solved' || status === 'shown';
   return (
-    <div className={`puzzle-play ${compact ? 'compact' : ''}`} ref={fitRef}>
+    <div className={`puzzle-play ${compact ? 'compact' : ''}`} ref={fitRef} data-puzzle={puzzle.id} data-themes={puzzle.themes.join(' ')}>
       <div className="puzzle-board">
         <Board id="puzzle-board" fen={fen} orientation={solver === 'w' ? 'white' : 'black'} onMove={done ? undefined : onMove} squares={squares} maxWidth={600} />
       </div>

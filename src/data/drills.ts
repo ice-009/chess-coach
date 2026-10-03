@@ -5,7 +5,7 @@ import type { Goal } from '../components/PlayBoard';
 export interface Drill {
   id: string;
   title: string;
-  group: 'Checkmates' | 'King and pawn' | 'Rook endgames';
+  group: 'Checkmates' | 'King and pawn' | 'Rook endgames' | 'Queen endgames';
   fen: string;
   you: 'w' | 'b';
   goal: Goal;
@@ -39,6 +39,42 @@ export const DRILLS: Drill[] = [
     you: 'w',
     goal: { type: 'mate', maxMoves: 10 },
     tip: 'One rook cuts off a rank, the other gives check on the next rank: the king climbs down like a ladder. If the king attacks a rook, move that rook far away along the same rank.',
+  },
+  {
+    id: 'two-bishops',
+    title: 'Two bishops vs king',
+    group: 'Checkmates',
+    fen: '8/8/3k4/8/8/8/8/2B1KB2 w - - 0 1',
+    you: 'w',
+    goal: { type: 'mate', maxMoves: 30 },
+    tip: 'Put the bishops side by side: together they make a diagonal wall the king can’t cross. Shrink its area step by step, bring your king up to take the squares next to it, and drive it into a corner. The mate comes with the bishops on neighbouring diagonals. Watch for stalemate when the box gets small.',
+  },
+  {
+    id: 'bn-corner',
+    title: 'Bishop and knight: finish the mate',
+    group: 'Checkmates',
+    fen: '1k6/8/2K5/3N4/8/8/8/5B2 w - - 0 1',
+    you: 'w',
+    goal: { type: 'mate', maxMoves: 10 },
+    tip: 'You can only mate in a corner your bishop controls: here the light-squared bishop needs a8 (or h1). Your king stands opposite the enemy king; the knight and bishop take turns covering the escape squares b8 and a7 until the bishop or knight gives mate.',
+  },
+  {
+    id: 'bn-wrong-corner',
+    title: 'Bishop and knight: from the wrong corner',
+    group: 'Checkmates',
+    fen: '7k/8/5K2/5B2/6N1/8/8/8 w - - 0 1',
+    you: 'w',
+    goal: { type: 'mate', maxMoves: 45 },
+    tip: 'The king sits in h8, a dark corner, but your bishop is light-squared, so it can never mate there. Drive it along the 8th rank toward a8 with the “W manoeuvre”: the knight hops f7–e5–d7–c5–b7 in a W shape while your king and bishop keep the enemy king on the edge. Patience: it takes over 30 moves even with perfect play.',
+  },
+  {
+    id: 'bn-full',
+    title: 'Bishop and knight: the full mate',
+    group: 'Checkmates',
+    fen: '8/8/3k4/8/8/8/8/1N2KB2 w - - 0 1',
+    you: 'w',
+    goal: { type: 'mate', maxMoves: 50 },
+    tip: 'The hardest basic mate (at most 33 moves with best play; the 50-move rule gives you 50). First centralise all three pieces, then push the king to the edge, then into the corner of your bishop’s colour, using the W manoeuvre if it runs to the wrong one.',
   },
   {
     id: 'kp-sixth',
@@ -120,6 +156,24 @@ export const DRILLS: Drill[] = [
     you: 'b',
     goal: { type: 'draw', surviveMoves: 25 },
     tip: 'Keep your rook on your 3rd rank (here the 6th) so the white king can’t advance. Only when the pawn steps onto it, swing your rook to the back and give checks from behind.',
+  },
+  {
+    id: 'queen-vs-pawn',
+    title: 'Queen vs pawn on the 7th',
+    group: 'Queen endgames',
+    fen: '7K/8/8/8/8/8/3pk3/Q7 w - - 0 1',
+    you: 'w',
+    goal: { type: 'capture', maxMoves: 35 },
+    tip: 'Check, or pin, until the black king has to step in front of its own pawn (on d1). That blocks the pawn for one move: use it to bring your king one step closer. Repeat, and when your king arrives, win the pawn.',
+  },
+  {
+    id: 'queen-vs-c-pawn',
+    title: 'Hold the draw: queen vs bishop pawn',
+    group: 'Queen endgames',
+    fen: '6K1/8/8/8/8/8/1kp5/6Q1 w - - 0 1',
+    you: 'b',
+    goal: { type: 'draw', surviveMoves: 20 },
+    tip: 'A pawn on the c- or f-file (and on the a- or h-file) on the 7th, with its king next to it, draws against a lone queen: when you are driven to the corner, go to a1 instead of blocking the pawn. Taking the pawn then leaves you stalemated, and White’s king is too far away to help.',
   },
 ];
 

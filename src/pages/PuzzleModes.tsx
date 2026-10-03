@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   THEMES,
   buildPuzzles,
@@ -10,6 +11,7 @@ import {
   puzzleStatus,
   reviewCount,
   scheduleReview,
+  themeInfo,
   themeLabel,
   updateRating,
 } from '../lib/puzzles';
@@ -64,8 +66,13 @@ export function usePuzzleStatus() {
 
 const CORE = THEMES.slice(0, 12);
 
-/** Rated training: puzzles near your rating, optionally one theme. */
-export function RatedTraining({ theme }: { theme?: string }) {
+type ThemeChip = { key: string; label: string; tip: string; lesson?: string };
+
+/**
+ * Rated training: puzzles near your rating, optionally one theme. `chips` + `base` give a section its own
+ * theme row (e.g. Endgames → train/endgames/<theme>); by default the general tactics themes.
+ */
+export function RatedTraining({ theme, chips, base = 'train/theme', footer }: { theme?: string; chips?: ThemeChip[]; base?: string; footer?: ReactNode }) {
   const [rating, setRating] = useState(() => getRating().rating);
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [result, setResult] = useState<{ solved: boolean; delta: number } | null>(null);
@@ -100,6 +107,15 @@ export function RatedTraining({ theme }: { theme?: string }) {
 
   return (
     <div>
+      {chips ? (
+        <div className="chips theme-chips">
+          {chips.map((t) => (
+            <button key={t.key} className={`chip ${theme === t.key ? 'on' : ''}`} title={t.tip} onClick={() => navigate(`${base}/${t.key}`)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      ) : (
       <div className="chips theme-chips">
         <button className={`chip ${!theme ? 'on' : ''}`} onClick={() => navigate('train')}>All themes</button>
         {CORE.map((t) => (
@@ -117,7 +133,14 @@ export function RatedTraining({ theme }: { theme?: string }) {
           {THEMES.slice(12).map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
         </select>
       </div>
-      {theme && <p className="muted small theme-tip"><b>{themeLabel(theme)}</b>: {THEMES.find((t) => t.key === theme)?.tip}</p>}
+      )}
+      {theme && (
+        <p className="muted small theme-tip">
+          <b>{themeLabel(theme)}</b>: {themeInfo(theme)?.tip}
+          {themeInfo(theme)?.lesson && <> <a href={`#/learn/${themeInfo(theme)!.lesson}`}>Read the lesson →</a></>}
+        </p>
+      )}
+      {footer}
       {error && <div className="error">{error}</div>}
       {puzzle && (
         <PuzzlePlayer key={puzzle.id} puzzle={puzzle} onDone={onDone}>

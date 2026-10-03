@@ -701,6 +701,107 @@ Attacker’s king is in front of his own pawn on the 7th, and the defending king
           { kind: 'board', fen: '3K4/3P1k2/8/8/8/8/2r5/4R3 w - - 0 1', caption: 'Lucena position: White plans Rf1+, then Rf4! to build a bridge for the king to escape the checks.', arrows: ['e1f1', 'f1f4'] },
         ],
       },
+      {
+        id: 'basic-mates',
+        title: 'The basic checkmates: queen, rook, two bishops, bishop and knight',
+        minutes: 9,
+        sections: [
+          {
+            kind: 'text',
+            md: `When you are a piece or more up and the board has emptied, you must be able to finish. These are the mates against a lone king that every player needs, from easiest to hardest:
+
+- **King and queen** (about 10 moves): keep the queen a knight’s jump from the enemy king to shrink its box, push it to the edge, then bring your king next to it and mate.
+- **King and rook** (up to about 16 moves): cut the king off with the rook, walk your king up, and when the kings face each other give the check that pushes the king back one rank. Repeat until it reaches the edge.
+- **Two bishops** (up to about 19 moves): side by side they form a diagonal wall the king can’t cross. Shrink its area, bring your king, and mate in any corner.
+- **Bishop and knight** (up to 33 moves, the hardest): you can only mate in a corner of your **bishop’s colour**. If the king runs to the other corner, drive it along the edge with the knight’s “W manoeuvre”.
+- **Two knights**: can’t force mate. With correct defence it is a draw; mates only happen if the defender walks into one.
+
+### The golden rule
+Before every move, ask: *does the enemy king still have a legal move?* If you take its last square without giving check, it is **stalemate**: a draw.
+
+Practise each of these against the computer in **Practice → Endgame drills**.`,
+          },
+          { kind: 'board', fen: 'R5k1/8/6K1/8/8/8/8/8 b - - 0 1', caption: 'Rook mate: the kings face each other, and the rook checks along the edge. The king has nowhere to go.' },
+          { kind: 'board', fen: '7k/8/6K1/8/2BB4/8/8/8 b - - 0 1', caption: 'Two-bishop mate: the dark-squared bishop checks on the long diagonal, the light-squared bishop takes g8, and the king covers g7 and h7.' },
+          { kind: 'board', fen: '1k6/1B6/1KN5/8/8/8/8/8 b - - 0 1', caption: 'Bishop-and-knight mate in a light corner: the knight gives check, the bishop and king cover every escape square.' },
+          { kind: 'board', fen: '7k/8/5NKN/8/8/8/8/8 b - - 0 1', caption: 'Why two knights can’t win: here Black has no legal move but is not in check. That is stalemate, a draw. Every attempt to force mate ends like this or lets the king out.' },
+          { kind: 'exercise', fen: '6k1/8/6K1/8/8/8/8/R7 w - - 0 1', prompt: 'White to move. Mate in one with the rook.', solutions: ['Ra8#'], explain: '**Ra8#**. The kings face each other, so the black king can’t step forward, and the rook covers the whole 8th rank.' },
+          { kind: 'exercise', fen: '7k/8/6K1/8/2B5/4B3/8/8 w - - 0 1', prompt: 'White to move. Mate in one with the two bishops.', solutions: ['Bd4#'], explain: '**Bd4#**. The dark-squared bishop checks along the long diagonal, the light-squared bishop on c4 already covers g8, and your king covers g7 and h7.' },
+          { kind: 'exercise', fen: '1k6/1B6/1K6/N7/8/8/8/8 w - - 0 1', prompt: 'White to move. Mate in one with bishop and knight.', solutions: ['Nc6#'], explain: '**Nc6#**. The knight checks from c6; a8 and c8 are covered by the bishop, a7 and c7 by your king, and the bishop on b7 is protected by the king.' },
+        ],
+      },
+      {
+        id: 'pawn-endgame-technique',
+        title: 'Pawn endgames: races, outside passed pawns and spare moves',
+        minutes: 8,
+        sections: [
+          {
+            kind: 'text',
+            md: `In a pawn endgame everything can be calculated, and one tempo decides the game. So count instead of guessing.
+
+### Count the race
+When both sides have a passed pawn, count how many moves each needs to promote. The one who gets there first usually wins, and promoting **with check** gains an extra move. Before you start the race, check whether the enemy king can catch your pawn (the rule of the square).
+
+### The outside passed pawn
+A passed pawn far from the other pawns is a decoy. The enemy king has to run over to stop it, and while it does, your king walks to the other wing and eats the pawns there.
+
+### Zugzwang and spare moves
+Often the side to move loses, because every king move gives way. Then a spare pawn move (a **tempo**) that changes nothing else wins the game: keep such pawn moves in reserve, and don’t waste them early.
+
+### Triangulation
+When the kings are locked in a fight for the opposition, the side with more room can walk its king around a triangle of three squares. It arrives back on the same square, but now with the opponent to move, who can’t copy the manoeuvre.`,
+          },
+          { kind: 'exercise', fen: '8/p7/8/8/8/8/5k1P/1K6 w - - 0 1', prompt: 'White to move. Both sides have a passed pawn. Which move wins?', solutions: ['h4'], explain: '**1.h4!** Push the pawn right away: after 1...Kg3 2.h5 the black king is one step too late, and White queens long before the a-pawn. Any other move gives the black king time to reach the h-pawn, and the game is a draw.' },
+          { kind: 'exercise', fen: '8/5kpp/8/8/P7/6P1/5P1P/6K1 w - - 0 1', prompt: 'White to move. White has an outside passed pawn. What is the fastest way to win?', solutions: ['a5'], explain: '**1.a5!** The black king is outside the “square” of the pawn (a5–a8–d8–d5), so the pawn simply runs: a6, a7, a8. When the king is close enough to catch it, the outside pawn still wins by dragging it away from the kingside pawns.' },
+        ],
+      },
+      {
+        id: 'minor-endgames',
+        title: 'Bishop and knight endgames',
+        minutes: 8,
+        sections: [
+          {
+            kind: 'text',
+            md: `### The wrong rook pawn
+A bishop and a rook pawn can’t win if the bishop doesn’t control the promotion square (here: a light-squared bishop and an h-pawn, which promotes on the dark h8 square). If the defending king reaches that corner, it can never be driven out: a draw, even with the extra bishop.
+
+### Opposite-coloured bishops
+When each side has one bishop and they run on different colours, the defender blockades the pawns on the squares its own bishop controls, and the attacker’s bishop can never challenge it. Such endgames are often drawn even two pawns down. In the middlegame it’s the opposite: they help the attacker.
+
+### Bishop against knight
+- The **bishop** is better with pawns on both wings and an open position: it switches sides in one move.
+- The **knight** is better when all the pawns are on one side, or the position is closed, especially when the bishop is “bad”.
+- **Knights struggle against rook pawns**: on the edge of the board they have few ways to reach the pawn.
+
+### Knight endgames
+They play like pawn endgames: an active king and a passed pawn decide. Knights are slow, so count the jumps before you go after a pawn.`,
+          },
+          { kind: 'board', fen: '7k/8/6K1/7P/8/3B4/8/8 b - - 0 1', caption: 'The wrong rook pawn: White is a bishop and a pawn up, but the bishop is light-squared and h8 is dark. The black king shuffles between h8 and g8, and the game is a draw.', squares: ['h8'] },
+          { kind: 'exercise', fen: '8/4k3/8/7P/5K2/3B4/8/8 b - - 0 1', prompt: 'Black to move. You are a bishop and a pawn down. Save the game.', solutions: ['Kf7', 'Kf8'], explain: 'Head for the corner: **1...Kf7** (or 1...Kf8) and then g8–h8. White’s bishop is light-squared and can never drive your king out of the dark h8 corner, so it’s a draw. Wandering to the centre with 1...Ke6? or 1...Kf6? loses: the pawn runs before you arrive.' },
+        ],
+      },
+      {
+        id: 'queen-endgames',
+        title: 'Queen endgames: queen against a pawn',
+        minutes: 6,
+        sections: [
+          {
+            kind: 'text',
+            md: `A queen usually beats a pawn on the 7th rank, even when your king is far away. The method:
+
+1. **Check, or pin, until the enemy king has to stand in front of its own pawn.** For one move the pawn can’t advance.
+2. **Use that move to bring your king one step closer.**
+3. **Repeat** until your king helps win the pawn. Then queen against a lone king is an easy mate.
+
+### The two exceptions
+With the pawn on the **c- or f-file**, the defending king hides in the corner instead of blocking: if the queen takes the pawn, it is stalemate. With a **rook pawn** (a- or h-file) the king hides in front of its pawn, and every attempt also ends in stalemate. Both are draws unless the stronger side’s king is already close.
+
+Practise both in **Practice → Endgame drills**: “Queen vs pawn on the 7th” (win it) and “Hold the draw: queen vs bishop pawn”.`,
+          },
+          { kind: 'board', fen: '7K/8/8/8/8/8/3pk3/Q7 w - - 0 1', caption: 'A d-pawn on the 7th: White wins with the check-and-approach method, even with the king on h8.', squares: ['d2'] },
+          { kind: 'board', fen: '6K1/8/8/8/8/1Q6/2p5/k7 w - - 0 1', caption: 'The stalemate trick with a c-pawn: 1.Qxc2 is stalemate, and anything else lets the pawn queen or allows more checks to be met the same way. With the white king this far away, it’s a draw.', squares: ['a1', 'c2'] },
+        ],
+      },
     ],
   },
   {
