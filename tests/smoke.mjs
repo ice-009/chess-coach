@@ -30,7 +30,7 @@ async function play(scope, san) {
 
 await step('home loads', async () => {
   await page.goto(URL);
-  await page.waitForSelector('.home-grid');
+  await page.waitForSelector('.dash .next-up');
 });
 
 await step('game review: Stockfish classifies every move', async () => {

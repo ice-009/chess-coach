@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
+import { accountsDev } from './server/accountsDev.ts'
 import { coachApi } from './server/coachApi.ts'
 import { lanGuard } from './server/lanGuard.ts'
 import { offlineSw } from './server/offlineSw.ts'
@@ -19,6 +20,7 @@ export default defineConfig(({ mode }) => ({
     coachApi(loadEnv(mode, process.cwd(), '')),
     dbApi(),
     puzzleApi(),
+    accountsDev(),
     offlineSw(process.env.VITE_STATIC_HOST === '1'), // hosted build only: works offline
   ],
   // the on-device database runs SQLite (WebAssembly) in a module worker

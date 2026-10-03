@@ -62,7 +62,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === self.location.origin) {
-    if (url.pathname === '/sw.js') return;
+    if (url.pathname === '/sw.js' || url.pathname.startsWith('/api/')) return; // accounts: always the network
     // the app is one page (hash routes), so every navigation is the start page
     if (req.mode === 'navigate') return event.respondWith(networkFirst(SHELL, req, '/', 4000));
     if (url.pathname === '/puzzles/manifest.json') return event.respondWith(networkFirst('cc-puzzles', req, req, 4000));

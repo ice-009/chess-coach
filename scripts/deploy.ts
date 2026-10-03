@@ -1,4 +1,5 @@
-// npm run deploy: builds the hosted version (no master database, no AI coach) and publishes it to Vercel.
+// npm run deploy: builds the hosted version (no master database, no AI coach) and publishes it to Vercel,
+// with the accounts function.
 // deploy/chess-coach is the git-ignored staging folder linked to the Vercel project (.vercel/project.json).
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -16,5 +17,7 @@ fs.mkdirSync(STAGE, { recursive: true });
 for (const f of fs.readdirSync(STAGE)) if (f !== '.vercel') fs.rmSync(path.join(STAGE, f), { recursive: true, force: true });
 fs.cpSync(path.join(ROOT, 'dist'), STAGE, { recursive: true });
 fs.copyFileSync(path.join(ROOT, 'vercel.json'), path.join(STAGE, 'vercel.json'));
+// accounts: api/account.ts becomes the /api/account serverless function (its Upstash keys are Vercel env vars)
+fs.cpSync(path.join(ROOT, 'api'), path.join(STAGE, 'api'), { recursive: true });
 fs.writeFileSync(path.join(STAGE, '.gitignore'), '.vercel\n');
 run('npx', ['--yes', 'vercel@latest', 'deploy', '--prod', '--yes'], STAGE);

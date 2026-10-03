@@ -18,7 +18,8 @@
     "db:export": "node --experimental-strip-types --no-warnings scripts/db/export.ts",
     "puzzles:update": "node --experimental-strip-types --no-warnings scripts/puzzles/build.ts",
     "build:static": "tsc -b && VITE_STATIC_HOST=1 vite build && node --experimental-strip-types --no-warnings scripts/puzzles/export-static.ts dist/puzzles",
-    "deploy": "node --experimental-strip-types --no-warnings scripts/deploy.ts"
+    "deploy": "node --experimental-strip-types --no-warnings scripts/deploy.ts",
+    "test:account": "node tests/account.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

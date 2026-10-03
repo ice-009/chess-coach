@@ -1,6 +1,9 @@
 import { Suspense, lazy } from 'react';
 import { useRoute } from './lib/router';
 import { Nav } from './components/Nav';
+import { startAccount } from './lib/account';
+
+startAccount(); // checks the session and keeps progress in sync with your account
 
 // each page is its own chunk, so the first load stays small and fast
 const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
@@ -13,6 +16,7 @@ const DatabasePage = lazy(() => import('./pages/DatabasePage').then((m) => ({ de
 const InsightsPage = lazy(() => import('./pages/InsightsPage').then((m) => ({ default: m.InsightsPage })));
 const PracticePage = lazy(() => import('./pages/PracticePage').then((m) => ({ default: m.PracticePage })));
 const TrainPage = lazy(() => import('./pages/TrainPage').then((m) => ({ default: m.TrainPage })));
+const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 const OfflinePage = lazy(() => import('./pages/OfflinePage').then((m) => ({ default: m.OfflinePage })));
 
 export default function App() {
@@ -41,7 +45,7 @@ export default function App() {
       page = <MastersPage classicId={a === 'classic' ? b : undefined} />;
       break;
     case 'games':
-      page = <GamesPage key={a ?? ''} username={a} />;
+      page = <GamesPage key={a ?? ''} username={a} gameUrl={query.get('game') ?? undefined} />;
       break;
     case 'explore':
       page = <ExplorePage key={query.get('fen') ?? ''} initialFen={query.get('fen') ?? undefined} />;
@@ -57,6 +61,9 @@ export default function App() {
       break;
     case 'train':
       page = <TrainPage key={a ?? ''} tab={a} arg={b} />;
+      break;
+    case 'account':
+      page = <AccountPage />;
       break;
     case 'offline':
       page = <OfflinePage />;

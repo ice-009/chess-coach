@@ -19,7 +19,8 @@ const DEVICES = [
 ];
 // [route, element the page is built around, must it fit on laptop/iPad screens?]
 const PAGES = [
-  ['', '.home-grid', false],
+  ['', '.dash .next-up', false],
+  ['account', '.auth-card, .acc-head', false],
   ['learn', '.lesson-list', false],
   ['learn/opening-rules', '.lesson .board-box', false],
   ['openings', '.card', false],

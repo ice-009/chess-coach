@@ -44,3 +44,12 @@ export function recentDays(days: number): { date: string; total: number }[] {
   }
   return out;
 }
+
+/** "just now", "5 min ago", "3 h ago", then the date. */
+export function ago(t: number): string {
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 45) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}

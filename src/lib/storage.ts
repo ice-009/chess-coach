@@ -9,12 +9,20 @@ export function load<T>(key: string, fallback: T): T {
   }
 }
 
+const listeners = new Set<(key: string) => void>();
+/** Called after every save (the account sync uses it to upload changed progress). */
+export function onSave(fn: (key: string) => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 export function save(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // storage full or blocked: progress just won't persist
   }
+  for (const fn of listeners) fn(key);
 }
 
 export const KEYS = {

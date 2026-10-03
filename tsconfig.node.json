@@ -19,5 +19,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "server", "scripts/db", "scripts/puzzles"]
+  "include": ["vite.config.ts", "server", "api", "scripts/db", "scripts/puzzles"]
 }

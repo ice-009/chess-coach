@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { navigate } from '../lib/router';
 import { STATIC_HOST } from '../lib/host';
+import { useAccount } from '../lib/account';
 import { NavIcons } from './icons';
 
 const TABS = [
@@ -36,7 +37,24 @@ export function Nav({ active }: { active: string }) {
       <span className="side-label">{t.label}</span>
     </a>
   );
-  const activeIsSecondary = TABS.some((t) => !t.primary && t.id === active);
+  const account = useAccount();
+  const activeIsSecondary = active === 'account' || TABS.some((t) => !t.primary && t.id === active);
+  // your account: at the foot of the sidebar, and in the "More" sheet on phones
+  const accountLink = (where: string) =>
+    account.status === 'unavailable' ? null : (
+      <a
+        href="#/account"
+        className={`side-link side-account ${where} ${active === 'account' ? 'on' : ''}`}
+        onClick={(e) => {
+          e.preventDefault();
+          setMore(false);
+          navigate('account');
+        }}
+      >
+        <span className="side-icon"><span className={`nav-avatar ${account.user ? 'in' : ''}`}>{account.user ? account.user.username[0].toUpperCase() : NavIcons.account}</span></span>
+        <span className="side-label">{account.user ? account.user.username : 'Sign in'}</span>
+      </a>
+    );
   return (
     <>
       <aside className="sidebar">
@@ -53,11 +71,13 @@ export function Nav({ active }: { active: string }) {
             <span className="side-label">More</span>
           </button>
         </nav>
+        {accountLink('in-rail')}
       </aside>
       {more && (
         <div className="more-sheet" onClick={() => setMore(false)}>
           <div className="more-panel" onClick={(e) => e.stopPropagation()}>
             {TABS.filter((t) => !t.primary).map(link)}
+            {accountLink('in-sheet')}
           </div>
         </div>
       )}

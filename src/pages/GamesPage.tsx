@@ -34,7 +34,7 @@ function GameReview({ game, user, onBack }: { game: ChessComGame; user: string; 
   );
 }
 
-export function GamesPage({ username }: { username?: string }) {
+export function GamesPage({ username, gameUrl }: { username?: string; gameUrl?: string }) {
   const [input, setInput] = useState(username ?? getMe());
   const [archives, setArchives] = useState<string[]>([]);
   const [loadedCount, setLoadedCount] = useState(0);
@@ -83,6 +83,12 @@ export function GamesPage({ username }: { username?: string }) {
     };
   }, [username]);
 
+  // #/games/<user>?game=<url> (from the dashboard) opens that game's review once the games are loaded
+  useEffect(() => {
+    const g = gameUrl && games.find((x) => x.url === gameUrl);
+    if (g) setSelected(g);
+  }, [gameUrl, games]);
+
   function submit(e: FormEvent) {
     e.preventDefault();
     const name = input.trim().toLowerCase();
@@ -114,7 +120,7 @@ export function GamesPage({ username }: { username?: string }) {
 
   return (
     <>
-      {selected && username && <GameReview game={selected} user={username} onBack={() => setSelected(null)} />}
+      {selected && username && <GameReview game={selected} user={username} onBack={() => { setSelected(null); if (gameUrl) navigate(`games/${username}`); }} />}
       <div hidden={!!selected}>
         <div className="page-head">
           <h1>Game Review</h1>
