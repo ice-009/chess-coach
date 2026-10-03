@@ -2,10 +2,11 @@
 // device, the other device signs in and gets it, changes made on both merge, a password change signs the other
 // device out, sign-out removes this device's copy, and the account can be deleted.
 // Usage: npm run test:account [-- <app url>]   (the app must be running with its /api/account)
-import { chromium } from 'playwright-core';
+//        ENGINE=webkit npm run test:account     (Safari's engine)
+import { chromium, webkit } from 'playwright-core';
 
 const URL = process.argv[2] || 'http://localhost:5173/';
-const browser = await chromium.launch().catch(() => chromium.launch({ channel: 'chrome' }));
+const browser = process.env.ENGINE === 'webkit' ? await webkit.launch() : await chromium.launch().catch(() => chromium.launch({ channel: 'chrome' }));
 const user = `e2e_${Date.now().toString(36)}`;
 const PASS = 'correct-horse-1';
 const NEW_PASS = 'battery-staple-2';
@@ -21,6 +22,10 @@ async function device(name) {
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
   page.on('dialog', (d) => d.accept());
+  if (process.env.DEBUG) {
+    page.on('response', (r) => r.url().includes('/api/account') && console.log(`  [${name}] ${r.request().method()} ${r.url().split('?')[1]} → ${r.status()}`));
+    page.on('requestfailed', (r) => r.url().includes('/api/') && console.log(`  [${name}] failed ${r.url().split('?')[1]}: ${r.failure()?.errorText}`));
+  }
   return { ctx, page };
 }
 const stored = (page, key) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), key);
@@ -33,7 +38,15 @@ async function signIn(page, username, password, create = false) {
   await page.fill('#acc-pass', password);
   await page.locator('.auth-card .btn-green').click();
 }
-const synced = (page) => page.waitForSelector('.sync-badge.ok', { timeout: 15000 });
+const synced = (page) => page.waitForSelector('.sync-badge.ok', { timeout: 30000 });
+/** Runs one complete sync on this device (Sync now) and waits until it has finished. */
+async function syncRound(page) {
+  await page.goto(URL + '#/account');
+  await page.waitForSelector('.acc-head .sync-badge:not(.busy)', { timeout: 30000 });
+  const before = Number(await page.locator('.acc-head .sync-badge').getAttribute('data-last'));
+  await page.locator('.acc-sync button', { hasText: 'Sync now' }).click();
+  await page.waitForFunction((t) => Number(document.querySelector('.acc-head .sync-badge.ok')?.getAttribute('data-last')) > t, before, { timeout: 30000 });
+}
 async function finishLesson(page, id) {
   await page.goto(`${URL}#/learn/${id}`);
   await page.locator('.lesson-footer .primary').click();
@@ -57,7 +70,7 @@ await synced(A.page);
 check((await navLabel(A.page)) === user, 'the sidebar shows the username');
 const cookies = await A.ctx.cookies();
 const session = cookies.find((c) => c.name === 'cc_session');
-check(!!session && session.httpOnly && session.sameSite === 'Lax', 'session cookie is HttpOnly and SameSite=Lax');
+check(!!session && session.httpOnly && session.sameSite === 'Lax' && (session.secure || !URL.startsWith('https:')), 'session cookie is HttpOnly, SameSite=Lax and (on https) Secure');
 check(!(await A.page.evaluate(() => document.cookie)).includes('cc_session'), 'page scripts can’t read the session cookie');
 check((await A.page.evaluate(() => Object.keys(localStorage).filter((k) => /pass|token|session/i.test(k)).join())) === '', 'no password or token in localStorage');
 
@@ -78,11 +91,10 @@ await finishLesson(B.page, 'opening-rules');
 await A.page.goto(URL + '#/learn/center-king'); // A works on something else at the same time
 await finishLesson(A.page, 'center-king');
 await Promise.all([A.page.waitForTimeout(5000), B.page.waitForTimeout(5000)]);
-await A.page.reload();
-await B.page.reload();
-await A.page.goto(URL + '#/account');
-await B.page.goto(URL + '#/account');
-await Promise.all([synced(A.page), synced(B.page)]);
+// devices sync whenever they can; one round each, A then B then A, must leave both with everything
+await syncRound(A.page);
+await syncRound(B.page);
+await syncRound(A.page);
 const la = (await stored(A.page, 'cca-lessons-done')).sort().join();
 const lb = (await stored(B.page, 'cca-lessons-done')).sort().join();
 check(la === 'blunder-check,center-king,opening-rules' && la === lb, `lessons from both devices merged on both: ${la} | ${lb}`);

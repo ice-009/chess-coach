@@ -70,9 +70,11 @@ async function api<T>(method: 'GET' | 'POST' | 'PUT', op: string, body?: unknown
       body: method === 'GET' ? undefined : JSON.stringify(body ?? {}),
       credentials: 'same-origin',
       cache: 'no-store',
+      // a request that never answers (flaky Wi-Fi) mustn't leave sync stuck (Safari 15 has no AbortSignal.timeout)
+      signal: typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(20_000) : undefined,
     });
   } catch {
-    throw new AccountError('You’re offline. Connect to the internet and try again.', 0);
+    throw new AccountError(navigator.onLine ? 'The server didn’t answer. Try again.' : 'You’re offline. Connect to the internet and try again.', 0);
   }
   // a host without the accounts function answers with the app page or a 404
   if (!(res.headers.get('content-type') ?? '').includes('application/json')) throw new AccountError('Accounts aren’t available on this version of the app.', 503);
@@ -261,6 +263,10 @@ export function startAccount() {
   window.addEventListener('online', () => {
     if (state.status === 'signedIn') void syncNow();
   });
+  // while the app is on screen, pick up what other devices did every few minutes
+  setInterval(() => {
+    if (document.visibilityState === 'visible' && state.status === 'signedIn' && Date.now() - state.lastSync > 170_000) void syncNow();
+  }, 60_000);
 }
 
 /** Leaving the app: upload unsent changes in the background (small enough for a keepalive request). */

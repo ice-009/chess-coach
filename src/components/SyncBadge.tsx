@@ -15,5 +15,5 @@ export function SyncBadge({ account, compact }: { account: AccountState; compact
     account.sync === 'offline' ? ['off', 'Offline · saved on this device'] :
     account.sync === 'error' ? ['bad', 'Couldn’t sync · will retry'] :
     ['ok', account.lastSync ? `Synced ${ago(account.lastSync)}` : 'Signed in'];
-  return <a className={`sync-badge ${cls}`} href="#/account" title="Your account">{cls === 'busy' ? <span className="spinner tiny" /> : <span className="sync-dot" />}{text}</a>;
+  return <a className={`sync-badge ${cls}`} href="#/account" title="Your account" data-last={account.lastSync}>{cls === 'busy' ? <span className="spinner tiny" /> : <span className="sync-dot" />}{text}</a>;
 }

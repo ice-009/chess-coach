@@ -147,7 +147,7 @@ export async function handle(req: Request, store: Store): Promise<Response> {
     await store.set(`session:${sha256(t)}`, JSON.stringify({ u: name.toLowerCase(), t: Date.now(), c: Date.now() }), { ex: SESSION_SECONDS });
     return cookie(t, SESSION_SECONDS, secure);
   }
-  const tooMany = () => json(429, { error: 'Too many attempts. Wait 15 minutes and try again.' });
+  const tooMany = (wait: string) => json(429, { error: `Too many attempts. Wait ${wait} and try again.` });
 
   switch (`${req.method} ${op}`) {
     case 'GET me': {
@@ -164,9 +164,10 @@ export async function handle(req: Request, store: Store): Promise<Response> {
       const password = String(body.password ?? '');
       if (!USERNAME.test(username)) return json(400, { error: 'Usernames are 3 to 20 letters, digits, - or _.' });
       if (password.length < 8 || password.length > 200) return json(400, { error: 'Use a password of at least 8 characters.' });
-      if ((await store.incr(`rl:signup:${ip}`, 3600)) > 10) return tooMany();
+      if ((await store.incr(`rl:signup:${ip}`, 3600)) > 10) return tooMany('an hour');
       const { salt, hash } = await hashPassword(password);
-      const created: User = { username, salt, hash, created: Date.now() };
+      // validAfter: sessions left over from a deleted account with this name don't open the new one
+      const created: User = { username, salt, hash, created: Date.now(), validAfter: Date.now() };
       if (!(await store.set(`user:${username.toLowerCase()}`, JSON.stringify(created), { nx: true }))) return json(409, { error: 'That username is taken.' });
       return json(201, { user: publicUser(created) }, { 'Set-Cookie': await startSession(username) });
     }
@@ -174,7 +175,7 @@ export async function handle(req: Request, store: Store): Promise<Response> {
     case 'POST login': {
       const username = String(body.username ?? '').trim();
       const password = String(body.password ?? '');
-      if ((await store.incr(`rl:login:ip:${ip}`, 900)) > 30 || (await store.incr(`rl:login:user:${username.toLowerCase()}`, 900)) > 10) return tooMany();
+      if ((await store.incr(`rl:login:ip:${ip}`, 900)) > 30 || (await store.incr(`rl:login:user:${username.toLowerCase()}`, 900)) > 10) return tooMany('15 minutes');
       const found = USERNAME.test(username) ? (JSON.parse((await store.get(`user:${username.toLowerCase()}`)) ?? 'null') as User | null) : null;
       if (!(await verifyPassword(found, password))) return json(401, { error: 'Wrong username or password.' });
       await store.del(`rl:login:user:${username.toLowerCase()}`);
