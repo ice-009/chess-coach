@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CoachReport, ReasonKind } from '../lib/coach';
 import { CoachSetupError, coachConfigured, streamCoach } from '../lib/aiCoach';
 import { formatClock } from '../lib/analysis';
+import { THEME_LABEL } from '../lib/moveReasons';
 import { STATIC_HOST } from '../lib/host';
 import { ClassIcon } from './icons';
 import { Markdown } from './Markdown';
@@ -159,6 +160,18 @@ export function CoachPanel({ report, buildFacts, onJump, onPractice }: Props) {
                 {x.spent !== null && <span className="muted small">⏱ {x.spent < 10 ? x.spent.toFixed(1) : Math.round(x.spent)}s{x.clockBefore !== null ? ` · ${formatClock(x.clockBefore)} left` : ''}</span>}
               </div>
               <p>{x.text}</p>
+              {x.bestSan && x.bestWhy.length > 0 && (
+                <div className="insight-why">
+                  <b>Why {x.bestSan} is better:</b>
+                  <ul>
+                    {x.bestWhy.map((r) => (
+                      <li key={r.theme}>
+                        {r.text} {r.lesson && <a className="learn" href={`#/learn/${r.lesson}`}>{THEME_LABEL[r.theme]} →</a>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="insight-actions">
                 <button className="chip" onClick={() => onJump(x.ply)}>Find the better move</button>
                 <button className="chip" onClick={() => onJump(x.ply + 1)}>See what happened</button>

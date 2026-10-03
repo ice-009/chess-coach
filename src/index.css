@@ -485,6 +485,25 @@ button.stat:hover { background: #2d2b28; }
 .setup ol { padding-left: 20px; line-height: 1.7; color: var(--text-2); font-size: 0.9rem; }
 .setup code, .md code { background: #3c3a37; border-radius: 4px; padding: 1px 5px; font-size: 0.85em; }
 
+/* best move and why: under the coach bubble in the review, and in the coach's mistake list */
+.why-card { background: var(--bg-deep); border-radius: 8px; padding: 10px 12px; border-left: 4px solid var(--green); display: flex; flex-direction: column; gap: 7px; }
+.why-card.bad { border-left-color: #96bc4b; }
+.why-head { display: flex; align-items: center; gap: 8px; font-weight: 800; flex-wrap: wrap; }
+.why-head .eval-chip { margin-left: auto; }
+.why-list { margin: 0; padding-left: 18px; color: var(--text-2); line-height: 1.5; font-size: 0.92rem; display: flex; flex-direction: column; gap: 4px; }
+.learn { font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
+.why-line { font-family: ui-monospace, Menlo, monospace; font-size: 0.82rem; color: var(--text-2); line-height: 1.5; }
+.why-also { font-size: 0.88rem; color: var(--text-2); }
+.why-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.why-actions .chip { font-size: 0.82rem; padding: 5px 11px; }
+.line-card, .retry-card { background: var(--bg-deep); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; border-left: 4px solid #5c8bb0; line-height: 1.5; }
+.line-moves { line-height: 2; }
+.retry-card { border-left-color: var(--gold); }
+.retry-card.right, .retry-card.alt { border-left-color: var(--green); }
+.retry-card.wrong { border-left-color: var(--red); }
+.insight-why { background: var(--panel-2); border-radius: 6px; padding: 8px 10px; margin: 0 0 8px; font-size: 0.9rem; }
+.insight-why ul { margin: 4px 0 0; padding-left: 18px; color: var(--text-2); line-height: 1.5; }
+
 /* ── Master database ── */
 .eco { display: inline-block; background: var(--panel-3); color: var(--text-2); border-radius: 4px; padding: 0 6px; font-size: 0.75rem; font-weight: 800; font-family: ui-monospace, Menlo, monospace; margin-right: 4px; }
 .title-badge.sm { font-size: 0.62rem; padding: 1px 4px; margin-right: 4px; vertical-align: 1px; }
@@ -728,7 +747,7 @@ button.stat:hover { background: #2d2b28; }
   /* iOS zooms the page into any input whose text is smaller than 16px */
   input, select, textarea { font-size: 16px !important; }
   .chip, .chip-select { min-height: 40px; padding-top: 9px; padding-bottom: 9px; }
-  .insight-actions .chip { padding: 9px 12px; font-size: 0.85rem; }
+  .insight-actions .chip, .why-actions .chip { padding: 9px 12px; font-size: 0.85rem; }
   .seg button, .app button:not([class]), .btn-ghost, .icon-btn, .btn-secondary, .btn-green, .primary, .moment { min-height: 44px; }
   .side-link { min-height: 48px; }
   .nav-btn { padding: 14px 0; }

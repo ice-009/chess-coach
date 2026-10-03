@@ -4,6 +4,8 @@ import { formatClock, isError, timeSpent } from './analysis';
 import type { Classification, GameAnalysis, ParsedGame } from './analysis';
 import { formatScore } from './chess';
 import { PIECE_NAME, VALUE, lineText, materialBalance, phaseOf, playLine, settledBalance } from './tactics';
+import { explainChoice, wonInLine } from './moveReasons';
+import type { Reason as MoveReason } from './moveReasons';
 import { Chess } from 'chess.js';
 import type { PieceSymbol } from 'chess.js';
 
@@ -24,6 +26,7 @@ export interface MoveInsight {
   bestSan: string | null;
   refutation?: string; // the opponent's punishing line
   bestLine?: string; // what should have been played
+  bestWhy: MoveReason[]; // why the better move works
   text: string; // full explanation
 }
 
@@ -87,7 +90,7 @@ export function explainMove(game: ParsedGame, analysis: GameAnalysis, i: number,
   const lost = materialBefore - settledBalance(reply, color);
   // what we could have done instead
   const best = playLine(game.fens[i], before.pv ?? [], color, 6);
-  const gain = settledBalance(best, color) - best.start;
+  const gain = wonInLine(best, color).gain; // what the better move wins within a few moves
   const oppMates = after.mate !== null && (opp === 'w' ? after.mate > 0 : after.mate < 0);
   const weHadMate = before.mate !== null && (color === 'w' ? before.mate > 0 : before.mate < 0);
 
@@ -137,7 +140,8 @@ export function explainMove(game: ParsedGame, analysis: GameAnalysis, i: number,
     .filter(Boolean)
     .join(' ');
 
-  return { ply: i, label, classification: review.classification, phase, spent, clockBefore, timeCause, tactic, evalBefore, evalAfter, bestSan: review.bestSan, refutation, bestLine, text };
+  const bestWhy = review.bestSan ? (explainChoice(game, analysis, i).best?.reasons ?? []) : [];
+  return { ply: i, label, classification: review.classification, phase, spent, clockBefore, timeCause, tactic, evalBefore, evalAfter, bestSan: review.bestSan, refutation, bestLine, bestWhy, text };
 }
 
 const TIPS: Record<ReasonKind, { text: string; href: string }> = {
@@ -270,6 +274,7 @@ export function coachFacts(
       opponentBestReply: x.refutation ?? null,
       betterWas: x.bestSan,
       betterLine: x.bestLine ?? null,
+      whyBetter: x.bestWhy.map((r) => r.text),
     })),
     opponentStrongMoves: report.opponentHighlights.map((h) => `${h.label} (${h.classification})`),
   };

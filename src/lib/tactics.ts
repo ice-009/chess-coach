@@ -35,6 +35,7 @@ export function forkTargets(c: Chess, sq: Square, by: Color): PieceSymbol[] {
 
 export interface LineStep {
   san: string;
+  from: Square;
   color: Color;
   piece: PieceSymbol;
   to: Square;
@@ -64,6 +65,7 @@ export function playLine(fen: string, uci: string[], pov: Color, maxPlies = 8): 
     }
     steps.push({
       san: m.san,
+      from: m.from,
       color: m.color,
       piece: m.piece,
       to: m.to,

@@ -33,6 +33,7 @@ function stages(lessons: string[], drills: Record<string, number>): { title: str
         { label: 'Drill: king and queen vs king', href: '#/practice/drill/queen-mate', done: D('queen-mate') },
         { label: 'Drill: king and rook vs king', href: '#/practice/drill/rook-mate', done: D('rook-mate') },
         { label: 'Lesson: the golden rules of the opening', href: '#/learn/opening-rules', done: L('opening-rules') },
+        { label: 'Lesson: the centre and king safety', href: '#/learn/center-king', done: L('center-king') },
       ],
     },
     {
@@ -58,7 +59,9 @@ function stages(lessons: string[], drills: Record<string, number>): { title: str
         { label: 'Lessons: attacking the king, converting a won game', href: '#/learn/king-attack', done: L('king-attack') && L('converting') },
         { label: 'Drill: Lucena (winning rook endgame)', href: '#/practice/drill/lucena', done: D('lucena') },
         { label: 'Drill: Philidor (drawing rook endgame)', href: '#/practice/drill/philidor', done: D('philidor') },
-        { label: 'Lessons: pawn structure and planning', href: '#/learn/pawn-structure', done: L('pawn-structure') && L('planning') },
+        { label: 'Lessons: pawn structure, weak pawns and passed pawns', href: '#/learn/pawn-structure', done: L('pawn-structure') && L('pawn-weaknesses') && L('passed-pawns') },
+        { label: 'Lessons: rooks on open files, good and bad bishops, outposts', href: '#/learn/open-files', done: L('open-files') && L('bishops') && L('pieces-activity') },
+        { label: 'Lessons: pawn breaks, trades and making a plan', href: '#/learn/pawn-breaks', done: L('pawn-breaks') && L('trades') && L('planning') },
         { label: 'Lesson: time management', href: '#/learn/time', done: L('time') },
         { label: 'Study a master game a week (Masters)', href: '#/masters' },
       ],

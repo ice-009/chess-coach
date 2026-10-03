@@ -1,9 +1,14 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Chess } from 'chess.js';
+import type { Square } from 'chess.js';
 import { DEEP_DEPTH, analyzeGame, estimateGameRating, formatClock, isError, loadCached, saveCached, timeSpent, winPct } from '../lib/analysis';
 import type { AnalysisStage, Classification, GameAnalysis, ParsedGame, PositionEval } from '../lib/analysis';
 import { CLASS_META, CLASS_ORDER } from '../lib/classMeta';
 import { coachFacts, coachReport, explainMove } from '../lib/coach';
 import { formatScore } from '../lib/chess';
+import { getEngine } from '../lib/engine';
+import { THEME_LABEL, explainChoice } from '../lib/moveReasons';
+import type { MoveWhy, Reason } from '../lib/moveReasons';
 import { navigate } from '../lib/router';
 import { Board } from './Board';
 import { ClassIcon } from './icons';
@@ -35,6 +40,8 @@ interface Props {
 
 type Tab = 'report' | 'moves' | 'coach';
 
+const NO_ARROWS: string[] = [];
+const NO_SQUARES: Record<string, string> = {};
 const evalText = (ev?: PositionEval) => (ev ? formatScore(ev.mate === null ? ev.cp : null, ev.mate) : '');
 
 function whitePctOf(ev?: PositionEval): number | null {
@@ -204,6 +211,196 @@ function Summary({
   );
 }
 
+/** A variation shown on the board instead of the game: Stockfish's line, from the position before a move. */
+interface LineView {
+  base: number; // index of the starting position in the game
+  fens: string[];
+  moves: { from: string; to: string; san: string }[];
+  idx: number; // how many moves of the line are on the board
+  title: string;
+}
+
+/** "Retry": find a better move yourself in the position before your mistake. */
+interface RetryState {
+  i: number; // index of the move being retried
+  fen: string; // what the board shows
+  status: 'try' | 'checking' | 'right' | 'alt' | 'wrong';
+  tries: number;
+  tried?: string; // SAN of the last attempt
+}
+
+const moverWin = (e: PositionEval, me: 'w' | 'b') => (me === 'w' ? winPct(e.cp) : 100 - winPct(e.cp));
+
+function ReasonList({ reasons }: { reasons: Reason[] }) {
+  return (
+    <ul className="why-list">
+      {reasons.map((r) => (
+        <li key={r.theme}>
+          {r.text}{' '}
+          {r.lesson && (
+            <a className="learn" href={`#/learn/${r.lesson}`}>
+              {THEME_LABEL[r.theme]} →
+            </a>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Under the coach's speech bubble: the best move and why it works, or why the move played was good. */
+function WhyCard({
+  why,
+  classification,
+  evalBest,
+  evalPlayed,
+  onLine,
+  onRetry,
+}: {
+  why: { played: MoveWhy; best: MoveWhy | null; reply: string | null };
+  classification: Classification;
+  evalBest: string;
+  evalPlayed: string;
+  onLine: (pv: string[], title: string) => void;
+  onRetry: () => void;
+}) {
+  const { played, best } = why;
+  if (classification === 'book') return null;
+  if (!best) {
+    return (
+      <div className="why-card good">
+        <div className="why-head">
+          <ClassIcon c={classification === 'great' || classification === 'brilliant' ? classification : 'best'} size={18} />
+          Why {played.san} is {classification === 'great' || classification === 'brilliant' ? 'so strong' : 'the best move'}
+        </div>
+        {played.reasons.length ? <ReasonList reasons={played.reasons} /> : <div className="muted small">It is Stockfish’s first choice and keeps the position at {evalBest}.</div>}
+        {played.pv.length > 1 && (
+          <div className="why-actions">
+            <button className="chip" onClick={() => onLine(played.pv, `What follows ${played.san}`)}>▶ Show the follow-up</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+  const error = isError(classification) || classification === 'inaccuracy';
+  return (
+    <div className={`why-card ${error ? 'bad' : ''}`}>
+      <div className="why-head">
+        <ClassIcon c="best" size={18} />
+        Best move: {best.san}
+        <span className="eval-chip">{evalBest}</span>
+      </div>
+      {best.reasons.length ? (
+        <ReasonList reasons={best.reasons} />
+      ) : (
+        <div className="muted small">
+          No quick tactic: it is simply the most precise move. It keeps the position at {evalBest}; after {played.san}
+          {why.reply ? `, your opponent’s best answer is ${why.reply}, and` : ''} the position is {evalPlayed}.
+        </div>
+      )}
+      <div className="why-line">
+        <span className="muted">Best line:</span> {best.line}
+      </div>
+      {!error && played.reasons.length > 0 && !['mate', 'material', 'fork'].includes(played.reasons[0].theme) && (
+        <div className="why-also">
+          Your move {played.san} is fine too: {played.reasons[0].text.charAt(0).toLowerCase() + played.reasons[0].text.slice(1)}
+        </div>
+      )}
+      <div className="why-actions">
+        <button className="chip" onClick={() => onLine(best.pv, `Best line instead of ${played.san}`)}>▶ Show the line</button>
+        {error && <button className="chip" onClick={onRetry}>↻ Retry this move</button>}
+      </div>
+    </div>
+  );
+}
+
+function LineCard({ line, onStep, onClose }: { line: LineView; onStep: (to: number) => void; onClose: () => void }) {
+  const [, side, , , , full] = line.fens[0].split(' ');
+  let no = Number(full);
+  return (
+    <div className="line-card">
+      <div className="row-between">
+        <b>{line.title}</b>
+        <button className="chip" onClick={onClose}>✕ Back to the game</button>
+      </div>
+      <div className="line-moves">
+        {line.moves.map((m, k) => {
+          const white = (k + (side === 'b' ? 1 : 0)) % 2 === 0;
+          const label = white ? `${no}.` : k === 0 ? `${no}…` : '';
+          if (!white) no++;
+          return (
+            <span key={k}>
+              {label && <span className="muted">{label} </span>}
+              <button className={`move inline ${line.idx === k + 1 ? 'active' : ''}`} onClick={() => onStep(k + 1)}>{m.san}</button>{' '}
+            </span>
+          );
+        })}
+      </div>
+      <div className="why-actions">
+        <button className="chip" onClick={() => onStep(line.idx - 1)} disabled={line.idx === 0} aria-label="Previous move in the line">◀</button>
+        <button className="chip" onClick={() => onStep(line.idx + 1)} disabled={line.idx >= line.moves.length} aria-label="Next move in the line">▶</button>
+        <span className="muted small">Stockfish’s line, not the game. ◀ ▶ or the arrow keys step through it.</span>
+      </div>
+    </div>
+  );
+}
+
+function RetryCard({
+  retry,
+  color,
+  playedSan,
+  best,
+  onShow,
+  onClose,
+}: {
+  retry: RetryState;
+  color: 'w' | 'b';
+  playedSan: string;
+  best: MoveWhy | null;
+  onShow: () => void;
+  onClose: () => void;
+}) {
+  const side = color === 'w' ? 'White' : 'Black';
+  return (
+    <div className={`retry-card ${retry.status}`}>
+      {retry.status === 'try' && (
+        <div>
+          <b>Find a better move for {side}.</b> In the game you played {playedSan}. Move a piece on the board.
+        </div>
+      )}
+      {retry.status === 'checking' && (
+        <div className="row">
+          <span className="spinner tiny" /> Checking {retry.tried}…
+        </div>
+      )}
+      {retry.status === 'wrong' && (
+        <div>
+          <b>✗ {retry.tried} isn’t better.</b> {retry.tried === playedSan ? 'That is the move from the game. ' : ''}Look for checks, captures and threats, then try again.
+        </div>
+      )}
+      {retry.status === 'right' && (
+        <>
+          <div>
+            <b>✓ {retry.tried} is the best move!</b>
+          </div>
+          {best && best.reasons.length > 0 && <ReasonList reasons={best.reasons} />}
+        </>
+      )}
+      {retry.status === 'alt' && (
+        <div>
+          <b>✓ {retry.tried} works too.</b> Stockfish’s first choice was {best?.san}.
+        </div>
+      )}
+      <div className="why-actions">
+        {(retry.status === 'right' || retry.status === 'alt' || retry.tries >= 2) && (
+          <button className="chip" onClick={onShow}>{retry.status === 'wrong' ? 'Show the answer' : '▶ Show the line'}</button>
+        )}
+        <button className="chip" onClick={onClose}>Back to the game</button>
+      </div>
+    </div>
+  );
+}
+
 function PlayerBar({ p, color, clock, active }: { p: PlayerInfo; color: 'w' | 'b'; clock?: number | null; active: boolean }) {
   return (
     <div className="player-bar">
@@ -224,6 +421,11 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
   const [stage, setStage] = useState<AnalysisStage | 'done'>(cached ? 'done' : 'quick');
   const [progress, setProgress] = useState(cached ? 1 : 0);
   const [error, setError] = useState('');
+  const [line, setLine] = useState<LineView | null>(null);
+  const [retry, setRetry] = useState<RetryState | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+  // in the one-column layout (tablet portrait, phones) the panel sits under the board: bring the board back into view
+  const showBoard = () => requestAnimationFrame(() => boardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); // after the panel re-renders
   const onAnalyzedRef = useRef(onAnalyzed);
   useEffect(() => {
     onAnalyzedRef.current = onAnalyzed;
@@ -256,18 +458,37 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
     return () => ctrl.abort();
   }, [parsed, cacheKey, cached]);
 
-  const goto = useCallback((p: number) => {
-    setTab('moves');
+  // moving through the game always leaves a variation or a retry
+  const select = useCallback((p: number | ((p: number) => number)) => {
+    setLine(null);
+    setRetry(null);
     setPly(p);
   }, []);
+  const goto = useCallback(
+    (p: number | ((p: number) => number)) => {
+      setTab('moves');
+      select(p);
+    },
+    [select],
+  );
+  const stepLine = useCallback((to: number) => setLine((l) => l && { ...l, idx: Math.max(0, Math.min(l.moves.length, to)) }), []);
 
+  const lineRef = useRef(line);
+  useEffect(() => {
+    lineRef.current = line;
+  });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT') return;
+      const l = lineRef.current;
+      if (l && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        stepLine(l.idx + (e.key === 'ArrowLeft' ? -1 : 1));
+        return;
+      }
       const go = (fn: (p: number) => number) => {
         e.preventDefault();
-        setTab('moves');
-        setPly(fn);
+        goto(fn);
       };
       if (e.key === 'ArrowLeft') go((p) => Math.max(0, p - 1));
       if (e.key === 'ArrowRight') go((p) => Math.min(last, p + 1));
@@ -276,7 +497,7 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [last]);
+  }, [last, goto, stepLine]);
 
   const done = stage === 'done';
   const report = useMemo(() => (analysis && done ? coachReport(parsed, analysis, perspective, result) : null), [analysis, done, parsed, perspective, result]);
@@ -310,6 +531,74 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
     return [];
   }, [review, evalBefore]);
   const badge = useMemo(() => (lastMove && review ? { square: lastMove.to, c: review.classification } : undefined), [lastMove, review]);
+
+  // best move and the reasons behind it (also why a good move was good)
+  const why = useMemo(() => (analysis && ply > 0 ? explainChoice(parsed, analysis, ply - 1) : null), [analysis, parsed, ply]);
+
+  const openLine = useCallback(
+    (base: number, pv: string[], title: string) => {
+      const c = new Chess(parsed.fens[base]);
+      const fens = [c.fen()];
+      const moves: LineView['moves'] = [];
+      for (const u of pv.slice(0, 10)) {
+        try {
+          const m = c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] });
+          fens.push(c.fen());
+          moves.push({ from: m.from, to: m.to, san: m.san });
+        } catch {
+          break;
+        }
+      }
+      setRetry(null);
+      setLine({ base, fens, moves, idx: Math.min(1, moves.length), title });
+    },
+    [parsed],
+  );
+  // in a variation or a retry the bar shows the evaluation with best play from that position
+  const barEval = line ? analysis?.evals[line.base] : retry ? analysis?.evals[retry.i] : evalHere;
+  const lineSquares = useMemo<Record<string, string>>(() => {
+    const m = line && line.idx > 0 ? line.moves[line.idx - 1] : null;
+    return m ? { [m.from]: 'rgba(92,139,176,0.6)', [m.to]: 'rgba(92,139,176,0.6)' } : {};
+  }, [line]);
+
+  const onRetryMove = useCallback(
+    (from: Square, to: Square): boolean => {
+      if (!retry || !analysis) return false;
+      const i = retry.i;
+      const c = new Chess(parsed.fens[i]);
+      let m;
+      try {
+        m = c.move({ from, to, promotion: 'q' });
+      } catch {
+        return false;
+      }
+      const uci = m.from + m.to + (m.promotion ?? '');
+      const tries = retry.tries;
+      if (uci === analysis.evals[i].bestMove) {
+        setRetry({ ...retry, fen: c.fen(), status: 'right', tried: m.san });
+        return true;
+      }
+      if (uci === parsed.moves[i].uci) {
+        setRetry({ ...retry, status: 'wrong', tries: tries + 1, tried: m.san });
+        return false;
+      }
+      // another move: accept it if Stockfish rates it (almost) as highly as the best one
+      setRetry({ ...retry, fen: c.fen(), status: 'checking', tried: m.san });
+      const me = parsed.moves[i].color;
+      const bestWin = moverWin(analysis.evals[i], me);
+      const settle = (win: number) =>
+        setRetry((r) =>
+          r && r.i === i && r.status === 'checking' ? (bestWin - win < 4 ? { ...r, status: 'alt' } : { ...r, fen: parsed.fens[i], status: 'wrong', tries: tries + 1 }) : r,
+        );
+      if (c.isCheckmate()) settle(100);
+      else
+        getEngine()
+          .analyze(c.fen(), 12)
+          .then((r) => settle(100 - winPct(r.mate !== null ? (r.mate > 0 ? 10000 : -10000) : (r.cp ?? 0)))); // r is from the opponent's side
+      return true;
+    },
+    [retry, analysis, parsed],
+  );
 
   const clockFor = (color: 'w' | 'b') => {
     if (!parsed.clocks) return null;
@@ -381,11 +670,19 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
       </div>
 
       <div className="review-layout">
-        <div className="board-area">
-          <EvalBar whitePct={whitePctOf(evalHere)} label={evalText(evalHere)} flipped={perspective === 'b'} />
+        <div className="board-area" ref={boardRef}>
+          <EvalBar whitePct={whitePctOf(barEval)} label={evalText(barEval)} flipped={perspective === 'b'} />
           <div className="board-col">
             <PlayerBar p={top.p} color={top.c} clock={clockFor(top.c)} active={toMove === top.c && ply < last} />
-            <Board id="analysis-board" fen={parsed.fens[ply]} orientation={perspective === 'b' ? 'black' : 'white'} arrows={arrows} squares={squares} badge={badge} />
+            <Board
+              id="analysis-board"
+              fen={retry ? retry.fen : line ? line.fens[line.idx] : parsed.fens[ply]}
+              orientation={perspective === 'b' ? 'black' : 'white'}
+              arrows={retry || line ? NO_ARROWS : arrows}
+              squares={retry ? NO_SQUARES : line ? lineSquares : squares}
+              badge={retry || line ? undefined : badge}
+              onMove={retry && (retry.status === 'try' || retry.status === 'wrong') ? onRetryMove : undefined}
+            />
             <PlayerBar p={bottom.p} color={bottom.c} clock={clockFor(bottom.c)} active={toMove === bottom.c && ply < last} />
           </div>
         </div>
@@ -442,15 +739,46 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
 
             {tab === 'moves' && (
               <>
-                {analysis && (
+                {analysis && retry && (
+                  <RetryCard
+                    retry={retry}
+                    color={parsed.moves[retry.i].color}
+                    playedSan={parsed.moves[retry.i].san}
+                    best={why?.best ?? null}
+                    onShow={() => {
+                      openLine(retry.i, analysis.evals[retry.i].pv ?? [], 'Best line');
+                      showBoard();
+                    }}
+                    onClose={() => setRetry(null)}
+                  />
+                )}
+                {analysis && !retry && line && <LineCard line={line} onStep={stepLine} onClose={() => setLine(null)} />}
+                {analysis && !retry && !line && (
                   <div className="coach">
                     <span className="coach-avatar">♞</span>
                     <div className="coach-bubble">{coach}</div>
                   </div>
                 )}
+                {analysis && !retry && !line && why && review && (
+                  <WhyCard
+                    why={why}
+                    classification={review.classification}
+                    evalBest={evalText(evalBefore)}
+                    evalPlayed={evalText(evalHere)}
+                    onLine={(pv, title) => {
+                      openLine(ply - 1, pv, title);
+                      showBoard();
+                    }}
+                    onRetry={() => {
+                      setLine(null);
+                      setRetry({ i: ply - 1, fen: parsed.fens[ply - 1], status: 'try', tries: 0 });
+                      showBoard();
+                    }}
+                  />
+                )}
                 {comment && <div className="note">💬 {comment}</div>}
-                {analysis && <EvalGraph evals={analysis.evals} reviews={analysis.reviews} ply={ply} onSelect={setPly} />}
-                <MoveList parsed={parsed} reviews={analysis?.reviews} comments={comments} ply={ply} onSelect={setPly} />
+                {analysis && <EvalGraph evals={analysis.evals} reviews={analysis.reviews} ply={ply} onSelect={select} />}
+                <MoveList parsed={parsed} reviews={analysis?.reviews} comments={comments} ply={ply} onSelect={select} />
               </>
             )}
 
@@ -467,8 +795,8 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
 
           <footer className="side-foot">
             <button className="nav-btn" onClick={() => goto(0)} aria-label="First move">⏮</button>
-            <button className="nav-btn" onClick={() => { setTab('moves'); setPly((p) => Math.max(0, p - 1)); }} aria-label="Previous move">◀</button>
-            <button className="nav-btn main" onClick={() => { setTab('moves'); setPly((p) => Math.min(last, p + 1)); }} aria-label="Next move">▶</button>
+            <button className="nav-btn" onClick={() => (line ? stepLine(line.idx - 1) : goto((p) => Math.max(0, p - 1)))} aria-label="Previous move">◀</button>
+            <button className="nav-btn main" onClick={() => (line ? stepLine(line.idx + 1) : goto((p) => Math.min(last, p + 1)))} aria-label="Next move">▶</button>
             <button className="nav-btn" onClick={() => goto(last)} aria-label="Last move">⏭</button>
           </footer>
         </section>

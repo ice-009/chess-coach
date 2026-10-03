@@ -33,11 +33,14 @@ The layout is tuned for the iPad Air 11" in both orientations (and works on othe
 - Three passes: a quick shallow pass (under a second), then a full-depth pass, then a two-line search to find "only moves".
 - Every move is classified: Brilliant, Great, Book, Best, Excellent, Good, Inaccuracy, Mistake, Miss, Blunder.
 - Accuracy per player and an estimated **Game Rating** (the strength you played at in that game, from average centipawn loss). It is an estimate, not an official rating.
+- **Best move and why**: for every move the review shows Stockfish's best move and the reasons it works (wins material, forks, saves an attacked piece, stops a mate threat, develops, castles, takes the centre, rook on an open file or the 7th rank, knight outpost, better bishop, passed pawn, pawn break, active king, good trade), each with a link to the lesson that teaches the idea. Good moves get the same "why it's good" explanation.
+- **Show the line** plays Stockfish's line on the board (◀ ▶ or the arrow keys step through it). **Retry** puts you back before a mistake to find the better move yourself; Stockfish checks any move you try.
 - The **Coach** tab explains why each mistake happened using the clock data from the PGN (premoves, rushed critical moves, time trouble, long thinks that still went wrong) and the engine's lines (hung pieces, forks and other tactics you allowed, wins you missed).
 
 ## Training to 1500
 
 - **Home: today's plan and streak.** A daily checklist that ticks itself off (10 puzzles, due reviews, a lesson or drill, a reviewed game), a streak with a 14-day activity strip, and a three-stage road to 1500 that highlights your stage from your chess.com rating.
+- **Strategy course.** Ten lessons on pawn structure, weak pawns, passed pawns, rooks on open files and the 7th rank, good and bad bishops, knights and outposts, pawn breaks, the centre and king safety, when to trade, and making a plan. Every exercise answer is Stockfish's best move.
 - **Puzzles.** About 280,000 rated puzzles from the Lichess puzzle database (CC0), from beginner to master, tagged by theme. Modes:
   - *Rated*: puzzles near your puzzle rating, which adapts as you solve (a hint, a wrong move or "show solution" counts as a miss).
   - *Themes*: hanging pieces, forks, pins, skewers, mates in 1/2/3, back-rank mates, discovered attacks, endgames and more.

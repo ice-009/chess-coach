@@ -60,3 +60,15 @@ for (const d of DRILLS) {
   }
 }
 if (bad) process.exit(1);
+
+// every "Learn" link in the game review must point at a real lesson
+import { THEME_LESSON } from '../src/data/themes.ts';
+const lessonIds = new Set(CHAPTERS.flatMap((c) => c.lessons.map((l) => l.id)));
+for (const [theme, id] of Object.entries(THEME_LESSON)) {
+  if (lessonIds.has(id)) console.log(`ok  theme ${theme} -> ${id}`);
+  else {
+    bad++;
+    console.log(`BAD theme ${theme}: no lesson "${id}"`);
+  }
+}
+if (bad) process.exit(1);
