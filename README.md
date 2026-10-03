@@ -66,6 +66,8 @@ The layout is tuned for the iPad Air 11" in both orientations (and works on othe
 ## Training to 1500
 
 - **Home: today's plan and streak.** A daily checklist that ticks itself off (10 puzzles, due reviews, a lesson or drill, a reviewed game), a streak with a 14-day activity strip, and a three-stage road to 1500 that highlights your stage from your chess.com rating.
+- **Opening encyclopedia.** The main lines of 31 major openings (51 lines: Ruy Lopez, Italian, Scotch, Sicilian Najdorf/Dragon/Sveshnikov, French, Caro-Kann, Queen's Gambit, Slav, King's Indian, Nimzo-Indian, Grünfeld, Dutch, English and more), explained move by move with the plans for both sides; Study, Drill, or jump to the master games from any move. Every move is master practice (checked against the master database) and sound (checked by Stockfish). Next to it, *My repertoire* is a complete beginner repertoire to drill.
+- **Endgames.** Lessons on the basic checkmates, pawn-endgame technique, bishop and knight endgames and queen vs pawn; drills against the computer for every basic mate (queen, rook, two rooks, two bishops, bishop and knight) and the key pawn, rook and queen endgames; and endgame and checkmate-pattern puzzles (pawn, rook, bishop, knight, queen endgames, zugzwang; smothered, Arabian, Anastasia, Boden's and more).
 - **Strategy course.** Ten lessons on pawn structure, weak pawns, passed pawns, rooks on open files and the 7th rank, good and bad bishops, knights and outposts, pawn breaks, the centre and king safety, when to trade, and making a plan. Every exercise answer is Stockfish's best move.
 - **Puzzles.** About 280,000 rated puzzles from the Lichess puzzle database (CC0), from beginner to master, tagged by theme. Modes:
   - *Rated*: puzzles near your puzzle rating, which adapts as you solve (a hint, a wrong move or "show solution" counts as a miss).
@@ -118,6 +120,8 @@ The key is read only by the local server (`server/coachApi.ts`) and is never sen
 ## Checks
 
 ```bash
-npm run build     # type-check + production build
-npm run validate  # replays every opening line, classic game and lesson position with chess.js
+npm run build        # type-check + production build
+npm run validate     # replays every opening line, classic game and lesson position with chess.js
+npm run test:smoke   # main flows in a real browser (app must be running; pass its URL after --)
+npm run test:layout  # laptop, iPad (landscape/portrait) and phone sizes: no sideways scrolling, boards fit
 ```
