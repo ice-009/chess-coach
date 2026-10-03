@@ -27,7 +27,8 @@ function PasswordInput({ value, onChange, autoComplete, label, id }: { value: st
   );
 }
 
-function SignInForm() {
+/** `offline`: this copy of the app has no account server yet, so the form is shown but can't be sent. */
+function SignInForm({ offline = false }: { offline?: boolean }) {
   const [mode, setMode] = useState<'login' | 'signup'>(lastUsername() ? 'login' : 'signup');
   const [username, setUsername] = useState(lastUsername);
   const [password, setPassword] = useState('');
@@ -52,6 +53,7 @@ function SignInForm() {
   return (
     <div className="auth">
       <form className="auth-card panel" onSubmit={submit}>
+        {offline && <div className="note small" role="status">Sign-in isn’t switched on for this site yet: its account database is still being set up. Everything you do is saved on this device and joins your account once you sign in.</div>}
         <div className="auth-logo">♞</div>
         <h1>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
         <p className="muted">{mode === 'login' ? 'Sign in to pick up where you left off, on any device.' : 'Free, and no email needed. Just a username and a password.'}</p>
@@ -66,7 +68,7 @@ function SignInForm() {
         <PasswordInput id="acc-pass" label="Password" value={password} onChange={setPassword} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
         {mode === 'signup' && <div className="muted small">At least 8 characters. Safari can suggest a strong password and save it to your Keychain.</div>}
         {error && <div className="error" role="alert">{error}</div>}
-        <button className="btn-green big" disabled={busy}>{busy ? 'One moment…' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
+        <button className="btn-green big" disabled={busy || offline}>{busy ? 'One moment…' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
         {mode === 'signup' && hasProgress && <div className="note small">The progress already on this device (lessons, puzzles, ratings) will be saved to your new account.</div>}
       </form>
       <div className="auth-why">
@@ -274,12 +276,6 @@ function SignedIn({ account }: { account: AccountState }) {
 export function AccountPage() {
   const account = useAccount();
   if (account.status === 'loading') return <div className="page-loading"><span className="spinner" /></div>;
-  if (account.status === 'unavailable')
-    return (
-      <div className="empty">
-        <h2>Accounts aren’t available here</h2>
-        <p className="muted">This copy of the app has no account server. Your progress is saved on this device.</p>
-      </div>
-    );
+  if (account.status === 'unavailable') return <SignInForm offline />;
   return account.status === 'signedIn' && account.user ? <SignedIn account={account} /> : <SignInForm />;
 }

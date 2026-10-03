@@ -40,21 +40,20 @@ export function Nav({ active }: { active: string }) {
   const account = useAccount();
   const activeIsSecondary = active === 'account' || TABS.some((t) => !t.primary && t.id === active);
   // your account: at the foot of the sidebar, and in the "More" sheet on phones
-  const accountLink = (where: string) =>
-    account.status === 'unavailable' ? null : (
-      <a
-        href="#/account"
-        className={`side-link side-account ${where} ${active === 'account' ? 'on' : ''}`}
-        onClick={(e) => {
-          e.preventDefault();
-          setMore(false);
-          navigate('account');
-        }}
-      >
-        <span className="side-icon"><span className={`nav-avatar ${account.user ? 'in' : ''}`}>{account.user ? account.user.username[0].toUpperCase() : NavIcons.account}</span></span>
-        <span className="side-label">{account.user ? account.user.username : 'Sign in'}</span>
-      </a>
-    );
+  const accountLink = (where: string) => (
+    <a
+      href="#/account"
+      className={`side-link side-account ${where} ${active === 'account' ? 'on' : ''}`}
+      onClick={(e) => {
+        e.preventDefault();
+        setMore(false);
+        navigate('account');
+      }}
+    >
+      <span className="side-icon"><span className={`nav-avatar ${account.user ? 'in' : ''}`}>{account.user ? account.user.username[0].toUpperCase() : NavIcons.account}</span></span>
+      <span className="side-label">{account.user ? account.user.username : 'Sign in'}</span>
+    </a>
+  );
   return (
     <>
       <aside className="sidebar">
