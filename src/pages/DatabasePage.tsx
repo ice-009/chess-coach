@@ -233,7 +233,7 @@ function LocalDatabase({ sub, arg, query }: { sub?: string; arg?: string; query:
           <h1>Master Database</h1>
           {m ? (
             <p className="muted">
-              {Number(m.otb_games ?? m.games).toLocaleString()} over-the-board games{m.online_games ? ` + ${Number(m.online_games).toLocaleString()} online` : ''} · {Number(m.players).toLocaleString()} players · {m.first_year}–{m.last_year}
+              {Number(m.otb_games ?? m.games).toLocaleString()} over-the-board games{Number(m.online_games) > 0 ? ` + ${Number(m.online_games).toLocaleString()} online` : ''} · {Number(m.players).toLocaleString()} players · {m.first_year}–{m.last_year}
             </p>
           ) : (
             <p className="muted">Your own ChessBase-style library of over-the-board master games.</p>

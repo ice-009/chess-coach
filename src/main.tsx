@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { STATIC_HOST } from './lib/host'
+import { initInstall } from './lib/install'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -14,3 +15,4 @@ createRoot(document.getElementById('root')!).render(
 if (STATIC_HOST && import.meta.env.PROD && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => undefined)
 }
+if (STATIC_HOST) initInstall()

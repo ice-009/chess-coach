@@ -493,8 +493,12 @@ button.stat:hover { background: #2d2b28; }
 .steps code, .device-db code { background: #3c3a37; border-radius: 4px; padding: 1px 5px; font-size: 0.9em; }
 .offline-page .note { margin-bottom: 12px; }
 .offline-list { display: flex; flex-direction: column; gap: 8px; }
-.offline-item { display: flex; gap: 12px; align-items: center; background: var(--panel); border-radius: 10px; padding: 12px 14px; flex-wrap: wrap; }
-.offline-item > div { min-width: 0; }
+/* mark | text | button; on phones the button moves under the text */
+.offline-item { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; background: var(--panel); border-radius: 10px; padding: 12px 14px; }
+@media (max-width: 760px) {
+  .offline-item { grid-template-columns: 30px minmax(0, 1fr); }
+  .offline-item > button { grid-column: 2; justify-self: start; }
+}
 .offline-mark { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%; display: grid; place-items: center; background: var(--panel-3); font-weight: 900; color: var(--text-2); }
 .offline-mark.on { background: var(--green); color: #fff; }
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { importLocalDb, localStatus, removeLocalDb } from '../lib/localDb';
 import type { LocalStatus } from '../lib/localDb';
+import { platform } from '../lib/install';
 
 const gb = (bytes: number) => (bytes >= 1e9 ? `${(bytes / 1e9).toFixed(2)} GB` : `${Math.round(bytes / 1e6)} MB`);
 
@@ -46,6 +47,7 @@ export function DeviceDatabase({ onChange, compact }: { onChange?: (st: LocalSta
 
   if (!status) return <div className="page-loading"><span className="spinner" /></div>;
   const m = status.meta;
+  const os = platform();
   const fileInput = (
     <input ref={input} type="file" hidden onChange={(e) => e.target.files?.[0] && pick(e.target.files[0])} />
   );
@@ -57,7 +59,7 @@ export function DeviceDatabase({ onChange, compact }: { onChange?: (st: LocalSta
           <div>
             <b>✓ The master database is on this device</b>
             <div className="muted small">
-              {m ? `${Number(m.otb_games ?? m.games).toLocaleString()} over-the-board games${m.online_games ? ` + ${Number(m.online_games).toLocaleString()} online` : ''} · ${Number(m.players).toLocaleString()} players · ` : ''}
+              {m ? `${Number(m.otb_games ?? m.games).toLocaleString()} over-the-board games${Number(m.online_games) > 0 ? ` + ${Number(m.online_games).toLocaleString()} online` : ''} · ${Number(m.players).toLocaleString()} players · ` : ''}
               {gb(status.bytes)} · works offline
             </div>
           </div>
@@ -82,9 +84,16 @@ export function DeviceDatabase({ onChange, compact }: { onChange?: (st: LocalSta
       <ol className="steps">
         <li>
           On your Mac, in the ChessCoach folder, run <code>npm run db:export</code>. It saves <b>ChessCoach-masters.db</b> (about 0.75 GB) on your Desktop.
+          For a phone, <code>npm run db:export -- --otb</code> makes a 0.4 GB copy with the over-the-board games only.
         </li>
-        <li>AirDrop it to this iPad and choose <b>Save to Files</b> (or copy it with iCloud Drive or a USB cable).</li>
-        <li>Tap the button below and pick the file. Loading takes a minute; keep this page open.</li>
+        <li>
+          {os === 'ios'
+            ? <>AirDrop it to this device and choose <b>Save to Files</b> (or copy it with iCloud Drive or a USB cable).</>
+            : os === 'android'
+              ? <>Send it to this phone with <b>Quick Share</b>, Google Drive or a USB cable, and save it (e.g. in Downloads).</>
+              : <>Copy it to this computer.</>}
+        </li>
+        <li>{os === 'other' ? 'Click' : 'Tap'} the button below and pick the file. Loading takes a minute; keep this page open.</li>
       </ol>
       {progress !== null ? (
         <div className="build-progress">

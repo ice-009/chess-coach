@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { DeviceDatabase } from '../components/DeviceDatabase';
 import { STATIC_HOST } from '../lib/host';
+import { canPromptInstall, isInstalled, onInstallChange, platform, promptInstall } from '../lib/install';
 
 const PUZZLE_CACHE = 'cc-puzzles'; // the same cache the service worker serves puzzles from (server/offlineSw.ts)
 const canCache = typeof caches !== 'undefined' && 'serviceWorker' in navigator;
@@ -79,7 +80,7 @@ function PuzzleStatus() {
   return (
     <section className="offline-item">
       <span className={`offline-mark ${all ? 'on' : ''}`}>{all ? '✓' : '…'}</span>
-      <div style={{ flex: 1 }}>
+      <div>
         <b>Puzzles</b>
         <div className="muted small">
           {all
@@ -108,13 +109,13 @@ function StorageStatus() {
   return (
     <section className="offline-item">
       <span className={`offline-mark ${est.persisted ? 'on' : ''}`}>{est.persisted ? '✓' : 'i'}</span>
-      <div style={{ flex: 1 }}>
+      <div>
         <b>Storage</b>
         <div className="muted small">
           {mb(est.usage)} used{est.quota ? ` of ${mb(est.quota)} available to this site` : ''}.{' '}
           {est.persisted
             ? 'Kept permanently: the browser won’t clear it to make room.'
-            : 'Open ChessCoach from its Home Screen icon and use it regularly; Safari may clear data of sites you haven’t opened for weeks.'}
+            : 'Open ChessCoach from its icon and use it regularly: browsers may clear data of sites you haven’t opened for weeks, unless you tap Keep my data.'}
         </div>
       </div>
       {!est.persisted && navigator.storage?.persist && (
@@ -124,9 +125,41 @@ function StorageStatus() {
   );
 }
 
-// iPhone/iPad Home Screen apps keep their own storage, separate from Safari's
-const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
-const touchDevice = matchMedia('(pointer: coarse)').matches;
+/** Install the app first: on iPhone/iPad the Home Screen app even has its own storage, separate from Safari's. */
+function InstallCard() {
+  const [canPrompt, setCanPrompt] = useState(canPromptInstall);
+  useEffect(() => onInstallChange(() => setCanPrompt(canPromptInstall())), []);
+  if (!STATIC_HOST) return null;
+  const os = platform();
+  if (isInstalled())
+    return (
+      <section className="offline-item">
+        <span className="offline-mark on">✓</span>
+        <div>
+          <b>Installed</b>
+          <div className="muted small">You’re using the ChessCoach app: everything you save here stays with it.</div>
+        </div>
+      </section>
+    );
+  return (
+    <section className="offline-item install">
+      <span className="offline-mark">1</span>
+      <div>
+        <b>Install ChessCoach first</b>
+        <div className="muted small">
+          {canPrompt
+            ? 'It gets its own icon, opens full screen and works offline. No app store needed.'
+            : os === 'ios'
+              ? 'In Safari tap Share (the square with an arrow), then Add to Home Screen. Open ChessCoach from that icon and do the steps below there: the Home Screen app keeps its own storage, separate from Safari.'
+              : os === 'android'
+                ? 'In Chrome tap the ⋮ menu, then Install app (or Add to Home screen). Then open ChessCoach from its icon.'
+                : 'In Chrome or Edge, use the install icon at the right of the address bar.'}
+        </div>
+      </div>
+      {canPrompt && <button className="btn-green" onClick={() => promptInstall()}>Install</button>}
+    </section>
+  );
+}
 
 export function OfflinePage() {
   return (
@@ -135,13 +168,8 @@ export function OfflinePage() {
         <h1>Offline and on a flight</h1>
         <p className="muted">Everything on this page stays on this device and works without internet.</p>
       </div>
-      {STATIC_HOST && touchDevice && !standalone && (
-        <div className="note">
-          Using ChessCoach from the Home Screen? Then do these steps <b>in the Home Screen app</b>, not here in Safari: it keeps its own
-          storage. To add it: Share → Add to Home Screen.
-        </div>
-      )}
       <div className="offline-list">
+        <InstallCard />
         <AppStatus />
         <PuzzleStatus />
         <StorageStatus />
@@ -150,7 +178,7 @@ export function OfflinePage() {
       <section className="chapter">
         <h2>Before you fly</h2>
         <ol className="steps">
-          <li>Add ChessCoach to your Home Screen (Share → Add to Home Screen) and open it from there.</li>
+          <li>Install ChessCoach (see the top of this page) and open it from its icon.</li>
           <li>Open it once with internet after each update, so the newest version is saved.</li>
           <li>Tap <b>Save all puzzles</b> and load the master database above.</li>
           <li>Open your chess.com games once (Review → your username): game lists and games you have opened are kept, and finished reviews are saved.</li>
