@@ -10,6 +10,8 @@ import { KEYS, load, save } from '../lib/storage';
 import { logActivity } from '../lib/activity';
 import { Board } from '../components/Board';
 import { useFitTop } from '../lib/useFitTop';
+import { loadResults, openingPassed } from '../lib/openingQuiz';
+import { OpeningQuiz } from './OpeningQuiz';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const fenAt = (moves: MoveNode[], ply: number) => (ply === 0 ? START : moves[ply - 1].fenAfter);
@@ -188,6 +190,7 @@ function OpeningView({ opening, lineId, mode }: { opening: Opening; lineId?: str
           <div className="seg">
             <button className={mode !== 'drill' ? 'on' : ''} onClick={() => go(line.id, 'study')}>📖 Study</button>
             <button className={mode === 'drill' ? 'on' : ''} onClick={() => go(line.id, 'drill')}>🎯 Drill</button>
+            <button onClick={() => navigate(`openings/quiz?scope=${opening.id}`)}>🧪 Quiz</button>
           </div>
         </div>
 
@@ -209,8 +212,9 @@ function OpeningView({ opening, lineId, mode }: { opening: Opening; lineId?: str
   );
 }
 
-export function OpeningsPage({ openingId, lineId, mode, view }: { openingId?: string; lineId?: string; mode: string; view?: string }) {
+export function OpeningsPage({ openingId, lineId, mode, view, scope, color }: { openingId?: string; lineId?: string; mode: string; view?: string; scope?: string; color?: string }) {
   const { stats } = useDrillStats();
+  if (openingId === 'quiz') return <OpeningQuiz scope={scope ?? 'repertoire'} color={color} />;
   if (openingId) {
     const o = findOpening(openingId);
     return o ? <OpeningView opening={o} lineId={lineId} mode={mode} /> : <div className="error">Opening not found.</div>;
@@ -219,6 +223,7 @@ export function OpeningsPage({ openingId, lineId, mode, view }: { openingId?: st
   const groups = encyclopedia ? ENC_GROUPS : GROUPS;
   const list = encyclopedia ? ENCYCLOPEDIA : OPENINGS;
   const lineCount = ENCYCLOPEDIA.reduce((n, o) => n + o.lines.length, 0);
+  const quiz = loadResults();
   return (
     <div>
       <h1>Openings</h1>
@@ -235,9 +240,15 @@ export function OpeningsPage({ openingId, lineId, mode, view }: { openingId?: st
       ) : (
         <p className="muted">A complete, beginner-friendly repertoire. <b>Study</b> a line to understand the ideas, then <b>Drill</b> it: you play your side, the computer plays the other, until you know it cold.</p>
       )}
+      <button className="btn-green quiz-all" onClick={() => navigate(`openings/quiz?scope=${encyclopedia ? 'encyclopedia' : 'repertoire'}`)}>
+        🧪 Quiz {encyclopedia ? 'the whole encyclopedia' : 'my whole repertoire'}
+      </button>
       {groups.map((g) => (
         <section key={g.id} className="chapter">
-          <h2>{g.title}</h2>
+          <div className="row-between">
+            <h2>{g.title}</h2>
+            <button className="chip" onClick={() => navigate(`openings/quiz?scope=${g.id}`)}>🧪 Quiz this section</button>
+          </div>
           <p className="muted">{g.blurb}</p>
           <div className="cards">
             {list.filter((o) => o.group === g.id).map((o) => {
@@ -245,7 +256,11 @@ export function OpeningsPage({ openingId, lineId, mode, view }: { openingId?: st
               return (
                 <button key={o.id} className="card" onClick={() => navigate(`openings/${o.id}`)}>
                   <div className="card-title">{o.name}</div>
-                  <div className="muted small">{o.eco} · {o.lines.length} line{o.lines.length > 1 ? 's' : ''} · {drilled}/{o.lines.length} drilled</div>
+                  <div className="muted small">
+                    {o.eco} · {o.lines.length} line{o.lines.length > 1 ? 's' : ''} · {drilled}/{o.lines.length} drilled
+                    {openingPassed(o, 'w', quiz) && <span className="quiz-badge">✓ White</span>}
+                    {openingPassed(o, 'b', quiz) && <span className="quiz-badge">✓ Black</span>}
+                  </div>
                   <div className="card-body">{o.summary}</div>
                 </button>
               );

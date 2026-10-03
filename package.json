@@ -11,6 +11,7 @@
     "validate": "node --experimental-strip-types scripts/validate-data.ts",
     "test:layout": "node tests/layout.mjs",
     "test:smoke": "node tests/smoke.mjs",
+    "test:quiz": "node --experimental-strip-types --no-warnings tests/quiz.mjs",
     "start": "vite build && vite preview --port 5173 --open",
     "ipad": "node --experimental-strip-types --no-warnings scripts/ipad.ts",
     "db:update": "node --experimental-strip-types --no-warnings scripts/db/update.ts",

@@ -26,6 +26,8 @@ const PAGES = [
   ['openings?view=encyclopedia', '.card', false],
   ['openings/enc-ruy/enc-ruy-closed', '.op-board .board-box', true],
   ['openings/enc-najdorf/enc-najdorf-english?mode=drill', '.op-board .board-box', true],
+  ['openings/quiz?scope=repertoire', '.quiz-setup', false],
+  ['openings/quiz?scope=enc-ruy&color=w', '.quiz-round .board-box', true],
   ['train', '.puzzle-board .board-box', true],
   ['train/endgames', '.puzzle-board .board-box', true],
   ['train/mates', '.puzzle-board .board-box', true],

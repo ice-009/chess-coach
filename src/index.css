@@ -506,6 +506,26 @@ button.stat:hover { background: #2d2b28; }
 .setup ol { padding-left: 20px; line-height: 1.7; color: var(--text-2); font-size: 0.9rem; }
 .setup code, .md code { background: #3c3a37; border-radius: 4px; padding: 1px 5px; font-size: 0.85em; }
 
+/* ── Opening quiz ── */
+.quiz-setup { max-width: 760px; margin-top: 14px; }
+.quiz-setup h2 { margin: 0; }
+.quiz-progress { display: flex; gap: 10px; flex-wrap: wrap; }
+.quiz-progress > div { background: var(--bg-deep); border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; min-width: 150px; }
+.quiz-progress b { font-size: 1.3rem; }
+.quiz-progress span { color: var(--muted); font-size: 0.85rem; }
+.quiz-head { margin: 8px 0 4px; }
+.quiz-head h2 { margin: 0; }
+.quiz-result { background: var(--panel); border-radius: 10px; padding: 12px 14px; margin-top: 12px; display: flex; flex-direction: column; gap: 6px; border-left: 4px solid var(--green); }
+.quiz-result.bad { border-left-color: var(--red); }
+.quiz-result .btn-green { margin-top: 6px; }
+.note.quiz-wrong { background: #3a2624; border-left-color: var(--red); color: #ffd9d3; }
+.quiz-summary { margin-top: 12px; }
+.quiz-summary h2 { margin: 0; }
+.quiz-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; line-height: 1.5; }
+.quiz-list li.bad { color: #ffb4a8; }
+.quiz-badge { background: #2f3a26; color: var(--green-hi); border-radius: 4px; padding: 0 6px; margin-left: 6px; font-weight: 800; font-size: 0.75rem; }
+.quiz-all { margin: 4px 0 6px; }
+
 /* ── Offline: on-device master database, saved puzzles ── */
 .device-db { background: var(--panel); border-radius: 12px; padding: 18px 20px; margin: 16px 0; border: 1px solid #3c4a30; }
 .device-db h2 { margin-top: 0; }

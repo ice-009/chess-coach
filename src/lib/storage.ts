@@ -31,6 +31,7 @@ export const KEYS = {
   activity: 'cca-activity',
   visionBest: 'cca-vision-best',
   drillsDone: 'cca-drills-done',
+  openingQuiz: 'cca-opening-quiz', // lineId → { w, b }: last quiz result as each colour
 };
 
 export function getMe(): string {

@@ -25,7 +25,17 @@ export default function App() {
       page = <LearnPage lessonId={a} />;
       break;
     case 'openings':
-      page = <OpeningsPage key={query.get('view') ?? ''} openingId={a} lineId={b} mode={query.get('mode') ?? 'study'} view={query.get('view') ?? undefined} />;
+      page = (
+        <OpeningsPage
+          key={`${query.get('view') ?? ''}${query.get('scope') ?? ''}`}
+          openingId={a}
+          lineId={b}
+          mode={query.get('mode') ?? 'study'}
+          view={query.get('view') ?? undefined}
+          scope={query.get('scope') ?? undefined}
+          color={query.get('color') ?? undefined}
+        />
+      );
       break;
     case 'masters':
       page = <MastersPage classicId={a === 'classic' ? b : undefined} />;
