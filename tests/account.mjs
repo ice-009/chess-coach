@@ -23,6 +23,7 @@ async function device(name) {
   page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
   page.on('dialog', (d) => d.accept());
   if (process.env.DEBUG) {
+    page.on('console', (m) => m.type() !== 'log' && !/status of 401/.test(m.text()) && console.log(`  [${name} console] ${m.type()}: ${m.text()}`));
     page.on('response', (r) => r.url().includes('/api/account') && console.log(`  [${name}] ${r.request().method()} ${r.url().split('?')[1]} → ${r.status()}`));
     page.on('requestfailed', (r) => r.url().includes('/api/') && console.log(`  [${name}] failed ${r.url().split('?')[1]}: ${r.failure()?.errorText}`));
   }
@@ -42,7 +43,11 @@ const synced = (page) => page.waitForSelector('.sync-badge.ok', { timeout: 30000
 /** Runs one complete sync on this device (Sync now) and waits until it has finished. */
 async function syncRound(page) {
   await page.goto(URL + '#/account');
-  await page.waitForSelector('.acc-head .sync-badge:not(.busy)', { timeout: 30000 });
+  await page.waitForSelector('.acc-head .sync-badge:not(.busy)', { timeout: 30000 }).catch(async (e) => {
+    const badge = await page.locator('.sync-badge').first().evaluate((el) => `${el.className}: ${el.textContent}`).catch(() => 'no badge');
+    await page.screenshot({ path: 'test-results/account-stuck.png' });
+    throw new Error(`sync didn't settle (${badge}; screenshot in test-results/account-stuck.png): ${e.message.split('\n')[0]}`);
+  });
   const before = Number(await page.locator('.acc-head .sync-badge').getAttribute('data-last'));
   await page.locator('.acc-sync button', { hasText: 'Sync now' }).click();
   await page.waitForFunction((t) => Number(document.querySelector('.acc-head .sync-badge.ok')?.getAttribute('data-last')) > t, before, { timeout: 30000 });
