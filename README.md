@@ -18,6 +18,16 @@ A static build runs at https://chess-coach-psi-tawny.vercel.app: game review, pu
 npm run build:static   # dist/ with puzzles exported as static JSON shards (needs data/puzzles.db)
 ```
 
+## Use it on your iPad (with the master database)
+
+The hosted site has no master database (its licence is personal use only) and no AI coach. To get everything on your iPad, let your Mac serve the app over your home Wi-Fi:
+
+```bash
+npm run ipad
+```
+
+It builds the app, starts it on port 5173, keeps the Mac awake, and prints the address to open in Safari on the iPad, e.g. `http://Your-Mac.local:5173/?t=abc123`. Other devices on the network need the six-letter access code (stored in `.ipad-code.local`, git-ignored); each device asks for it once. Add it to the Home Screen for a full-screen app. The first time, macOS may ask whether Node can accept incoming connections: allow it. The Mac has to be on and on the same Wi-Fi; to use it away from home, install Tailscale on both devices and use the Mac's Tailscale address instead.
+
 ## iPad and phones
 
 The layout is tuned for the iPad Air 11" in both orientations (and works on other tablets and phones):
