@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
 import type { Puzzle } from '../lib/puzzles';
+import { useFitTop } from '../lib/useFitTop';
 import { Board } from './Board';
 
 export interface PuzzleResult {
@@ -22,6 +23,7 @@ const uciOf = (m: { from: string; to: string; promotion?: string }) => m.from + 
 
 /** Plays a Lichess-style puzzle: the first move is the opponent's, then you find the rest. */
 export function PuzzlePlayer({ puzzle, onDone, showRating = true, compact, failFast, children }: Props) {
+  const fitRef = useFitTop<HTMLDivElement>();
   const [ply, setPly] = useState(0); // moves of puzzle.moves already on the board
   const [fen, setFen] = useState(puzzle.fen);
   const [status, setStatus] = useState<'intro' | 'solving' | 'wrong' | 'solved' | 'shown'>('intro');
@@ -124,7 +126,7 @@ export function PuzzlePlayer({ puzzle, onDone, showRating = true, compact, failF
 
   const done = status === 'solved' || status === 'shown';
   return (
-    <div className={`puzzle-play ${compact ? 'compact' : ''}`}>
+    <div className={`puzzle-play ${compact ? 'compact' : ''}`} ref={fitRef}>
       <div className="puzzle-board">
         <Board id="puzzle-board" fen={fen} orientation={solver === 'w' ? 'white' : 'black'} onMove={done ? undefined : onMove} squares={squares} maxWidth={600} />
       </div>

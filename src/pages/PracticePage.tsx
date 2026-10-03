@@ -12,6 +12,7 @@ import type { PlayResult } from '../components/PlayBoard';
 import { AnalysisView } from '../components/AnalysisView';
 import type { ParsedGame } from '../lib/analysis';
 import { Board } from '../components/Board';
+import { useFitTop } from '../lib/useFitTop';
 
 const START = new Chess().fen();
 
@@ -175,6 +176,7 @@ const EMPTY = '8/8/8/8/8/8/8/8 w - - 0 1';
 const VISION_SECONDS = 30;
 
 function Vision() {
+  const fitRef = useFitTop<HTMLDivElement>();
   const [side, setSide] = useState<'white' | 'black'>('white');
   const [phase, setPhase] = useState<'ready' | 'running' | 'over'>('ready');
   const [target, setTarget] = useState(randomSquare);
@@ -221,7 +223,7 @@ function Vision() {
   const squares = useMemo(() => (flash ? { [flash.sq]: flash.ok ? 'rgba(129,182,76,0.75)' : 'rgba(250,65,45,0.6)' } : {}), [flash]);
 
   return (
-    <div className="puzzle-play">
+    <div className="puzzle-play" ref={fitRef}>
       <div className="puzzle-board vision-board">
         <Board id="vision-board" fen={EMPTY} orientation={side} onSquare={onSquare} squares={squares} hideCoords maxWidth={560} />
         {phase === 'running' && <div className="vision-target">{target}</div>}

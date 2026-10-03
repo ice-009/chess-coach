@@ -1,6 +1,7 @@
 /* ── Design tokens: warm dark greys + green accent, a classic online-chess look ── */
 :root {
   color-scheme: dark;
+  accent-color: var(--green);
   --bg: #312e2b;
   --bg-deep: #262522;
   --sidebar: #262421;
@@ -25,7 +26,10 @@
   -webkit-font-smoothing: antialiased;
 }
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); }
+/* no double-tap zoom on controls (rapid taps on ◀ ▶ would zoom the page on iPad); pinch zoom still works */
+:where(button, a, input, select, summary, label, tr, [role='button'], [tabindex]) { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 a { color: var(--green-hi); text-decoration: none; }
 a:hover { text-decoration: underline; }
 h1 { font-size: 1.75rem; font-weight: 800; margin: 4px 0 8px; letter-spacing: -0.01em; }
@@ -86,8 +90,9 @@ button:disabled { opacity: 0.55; cursor: default; }
 /* ── App shell: sidebar + content ── */
 .shell { display: flex; min-height: 100vh; }
 .sidebar {
-  position: sticky; top: 0; height: 100vh; width: 168px; flex: 0 0 168px; background: var(--sidebar);
-  display: flex; flex-direction: column; padding: 10px 0; z-index: 20;
+  position: sticky; top: 0; height: 100vh; height: 100dvh; width: calc(168px + env(safe-area-inset-left)); flex: 0 0 auto; background: var(--sidebar);
+  display: flex; flex-direction: column; padding: max(10px, env(safe-area-inset-top)) 0 10px env(safe-area-inset-left); z-index: 20;
+  overflow-y: auto; scrollbar-width: none;
 }
 .logo { display: flex; align-items: center; gap: 8px; padding: 8px 16px 18px; color: #fff; text-decoration: none !important; }
 .logo-mark { font-size: 1.9rem; line-height: 1; color: var(--green); }
@@ -103,7 +108,10 @@ button:disabled { opacity: 0.55; cursor: default; }
 .side-icon { width: 24px; height: 24px; flex: 0 0 24px; display: grid; place-items: center; }
 .side-icon svg { width: 24px; height: 24px; }
 .side-link.on .side-icon { color: var(--green); }
-.app { flex: 1; min-width: 0; max-width: 1240px; margin: 0 auto; padding: 22px 24px 60px; }
+.app {
+  flex: 1; min-width: 0; max-width: 1240px; margin: 0 auto;
+  padding: calc(22px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) 24px;
+}
 
 .page-head { margin-bottom: 14px; }
 .page-head p { margin: 0; }
@@ -150,7 +158,10 @@ button:disabled { opacity: 0.55; cursor: default; }
 .seg button.on { background: var(--panel-2); color: #fff; box-shadow: 0 2px 0 0 #1c1b19; }
 
 /* ── Boards & eval bar ── */
-.board-box { width: 100%; min-width: 0; border-radius: 4px; overflow: hidden; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+.board-box {
+  width: 100%; min-width: 0; border-radius: 4px; overflow: hidden; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; /* no text selection or callout while dragging pieces */
+}
 .board-badge { position: absolute; top: -6%; right: -6%; z-index: 30; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); animation: pop 0.18s ease-out; }
 @keyframes pop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .class-icon {
@@ -173,7 +184,7 @@ button:disabled { opacity: 0.55; cursor: default; }
 .review-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .review-title { margin: 0; font-size: 1.1rem; }
 .review-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
-.board-area { display: flex; gap: 8px; min-width: 0; max-width: 700px; }
+.board-area { display: flex; gap: 8px; min-width: 0; max-width: min(700px, max(360px, calc(100dvh - 174px))); }
 .board-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .board-col .board-box { max-width: none !important; }
 .player-bar { display: flex; align-items: center; gap: 8px; min-height: 38px; }
@@ -195,7 +206,7 @@ button:disabled { opacity: 0.55; cursor: default; }
 
 .side-panel {
   background: var(--panel); border-radius: var(--radius); display: flex; flex-direction: column; overflow: hidden;
-  position: sticky; top: 16px; max-height: min(calc(100vh - 86px), 860px);
+  position: sticky; top: calc(16px + env(safe-area-inset-top)); max-height: min(calc(100vh - 86px), 860px); max-height: min(calc(100dvh - 86px - env(safe-area-inset-top)), 860px);
 }
 .side-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #21201d; }
 .side-head-title { font-weight: 900; font-size: 1.05rem; }
@@ -385,11 +396,18 @@ button.stat:hover { background: #2d2b28; }
 /* ── Responsive ── */
 @media (max-width: 1100px) {
   .review-layout { grid-template-columns: 1fr; }
-  .side-panel { position: static; max-height: none; }
+  /* one column: the panel sits under the board and its move buttons stay pinned to the bottom of the screen */
+  .side-panel { position: static; max-height: none; overflow: visible; }
+  .side-head { border-radius: var(--radius) var(--radius) 0 0; }
+  .side-foot {
+    position: sticky; bottom: env(safe-area-inset-bottom, 0px); z-index: 5; border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.35);
+  }
   .board-area { max-width: 640px; margin: 0 auto; width: 100%; }
 }
 @media (max-width: 880px) {
   .analysis, .puzzle, .home-grid { grid-template-columns: 1fr; }
+  .analysis .board-box, .puzzle-play .board-box { margin-inline: auto; } /* stacked: centre the board over its buttons */
 }
 @media (max-width: 760px) {
   .shell { flex-direction: column; }
@@ -402,7 +420,10 @@ button.stat:hover { background: #2d2b28; }
   .side-link { flex: 1; flex-direction: column; gap: 3px; padding: 8px 0 7px; font-size: 0.66rem; justify-content: center; }
   .side-link.on { box-shadow: inset 0 3px 0 var(--green); }
   .side-icon, .side-icon svg { width: 22px; height: 22px; }
-  .app { padding: 14px 12px 90px; width: 100%; } /* margin:auto in a column flexbox would otherwise size it to its content */
+  .app { /* width: margin:auto in a column flexbox would otherwise size it to its content */
+    padding: calc(14px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) calc(90px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    width: 100%;
+  }
   h1 { font-size: 1.45rem; }
   .hero { padding: 18px; }
   .hero h1 { font-size: 1.6rem; }
@@ -412,8 +433,7 @@ button.stat:hover { background: #2d2b28; }
   .eval-num { font-size: 0.55rem; }
   .acc-grid, .class-row { grid-template-columns: 1fr 76px 76px; }
   /* keep the move buttons within thumb reach, just above the tab bar */
-  .side-panel { overflow: visible; }
-  .side-foot { position: sticky; bottom: calc(58px + env(safe-area-inset-bottom, 0px)); z-index: 5; border-radius: 0 0 var(--radius) var(--radius); box-shadow: 0 -6px 14px rgba(0,0,0,0.35); }
+  .side-foot { bottom: calc(58px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ── Review: analysis stages, game rating, coach ── */
@@ -552,7 +572,7 @@ button.stat:hover { background: #2d2b28; }
 
 .dossier-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
 .dossier-head h1 { margin: 0; }
-.record-grid, .rep-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.record-grid, .rep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 12px; margin-bottom: 16px; }
 .record-card { background: var(--panel); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
 .record-score { font-size: 2rem; font-weight: 900; }
 .rep { background: var(--panel); border-radius: 10px; padding: 12px; }
@@ -587,7 +607,12 @@ button.stat:hover { background: #2d2b28; }
 .check-row { display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text); font-size: 0.92rem; padding: 9px 0; }
 
 /* ── Puzzle trainer ── */
-.puzzle-play { display: grid; grid-template-columns: minmax(0, 600px) minmax(260px, 1fr); gap: 18px; align-items: start; }
+/* the board column shrinks so the whole board fits on screen in landscape; --fit-top (set by useFitTop) is where it starts */
+.puzzle-play {
+  display: grid; gap: 18px; align-items: start;
+  grid-template-columns: minmax(0, min(600px, max(380px, calc(100vh - var(--fit-top, 250px) - 16px)))) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, min(600px, max(380px, calc(100dvh - var(--fit-top, 250px) - 16px)))) minmax(260px, 1fr);
+}
 .puzzle-play .puzzle-side { gap: 12px; }
 .puzzle-status { display: flex; gap: 12px; align-items: center; background: var(--bg-deep); border-radius: 8px; padding: 12px; min-height: 64px; }
 .puzzle-status.solved { background: #2f3a26; }
@@ -657,6 +682,7 @@ button.stat:hover { background: #2d2b28; }
 .plan-check { width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%; border: 2px solid var(--panel-3); display: grid; place-items: center; font-size: 0.75rem; font-weight: 900; color: #fff; }
 .plan li.done .plan-check { background: var(--green); border-color: var(--green); }
 .strip { display: grid; grid-template-columns: repeat(14, 1fr); gap: 2px; margin: 6px 0 4px; }
+.strip, .strip-legend { max-width: 520px; } /* wide panels (tablet portrait) would otherwise grow each day into a big tile */
 .strip-day { aspect-ratio: 1; border-radius: 4px; }
 .strip-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
 .strip-key { width: 12px; height: 12px; border-radius: 3px; }
@@ -688,3 +714,64 @@ button.stat:hover { background: #2d2b28; }
   .theme-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
   .theme-chips .chip, .theme-chips .chip-select { flex: 0 0 auto; }
 }
+
+/* ── Tablets (iPad portrait and landscape): the sidebar becomes an icon rail with small labels ── */
+@media (min-width: 761px) and (max-width: 1199px) {
+  .sidebar { width: calc(84px + env(safe-area-inset-left)); }
+  .logo { justify-content: center; padding: 8px 0 14px; }
+  .logo-text { display: none; }
+  .side-link { flex-direction: column; gap: 4px; padding: 10px 2px; font-size: 0.7rem; text-align: center; line-height: 1.15; }
+}
+
+/* ── Touch screens: finger-sized targets, no zoom when an input gets focus ── */
+@media (pointer: coarse) {
+  /* iOS zooms the page into any input whose text is smaller than 16px */
+  input, select, textarea { font-size: 16px !important; }
+  .chip, .chip-select { min-height: 40px; padding-top: 9px; padding-bottom: 9px; }
+  .insight-actions .chip { padding: 9px 12px; font-size: 0.85rem; }
+  .seg button, .app button:not([class]), .btn-ghost, .icon-btn, .btn-secondary, .btn-green, .primary, .moment { min-height: 44px; }
+  .side-link { min-height: 48px; }
+  .nav-btn { padding: 14px 0; }
+  .seg-tabs button { padding: 13px 10px; }
+  .mv-row { min-height: 42px; }
+  .mv { padding: 8px 10px; }
+  .book { line-height: 2.7; }
+  .move.inline { padding: 6px 7px; }
+  .engine-line { padding: 12px; }
+  .mx-table td, .master-explorer.compact .mx-table td { padding-top: 11px; padding-bottom: 11px; }
+  .games-table td { padding-top: 12px; padding-bottom: 12px; }
+  .db-game { padding: 10px 12px; }
+  .lesson-item { padding: 15px 14px; }
+  .level-card { padding: 12px 14px; }
+  .plan li { min-height: 40px; }
+  .plan li a { flex: 1; padding: 8px 0; }
+  .table-twin summary, .ideas summary { padding: 8px 0; }
+  .check-row input { width: 22px; height: 22px; }
+  .eval-num { font-size: 0.72rem; }
+  /* small inline links get an invisible, larger hit area */
+  .link, .tips a, .review-link, .teaser-more, td a { position: relative; }
+  .link::after, .tips a::after, .review-link::after, td a::after { content: ''; position: absolute; inset: -10px -6px; }
+  /* puzzle themes: one row you swipe through, so the board starts higher on the screen */
+  .theme-chips {
+    flex-wrap: nowrap; overflow-x: auto; padding: 0 28px 4px 0; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  .theme-chips::-webkit-scrollbar { display: none; }
+  .theme-chips .chip, .theme-chips .chip-select { flex: 0 0 auto; }
+  .rating-chart svg { touch-action: pan-y; } /* sideways drag scrubs the chart, vertical drag scrolls the page */
+}
+
+/* ── No real hover (touch): a tap must not leave hover styles stuck on, or reveal content instead of clicking ── */
+@media (hover: none) {
+  .card:hover { transform: none; background: var(--panel); border-color: transparent; }
+  a:hover, .link:hover { text-decoration: none; }
+  .wdl-seg:hover::after { content: none; } /* the bar already prints its percentages; a hover tooltip would cost an extra tap */
+}
+
+/* selects look the same everywhere (Safari otherwise draws a small native pill that ignores padding) */
+select { -webkit-appearance: none; appearance: none; padding-right: 30px; }
+select, select.chip-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23989795' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center;
+}
+select.chip-select { padding-right: 30px; }

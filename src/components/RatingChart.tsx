@@ -55,8 +55,9 @@ export function RatingChart({ data }: { data: Point[] }) {
           role="img"
           aria-label={`Peak rating by year, from ${data[0].elo} in ${data[0].year} to ${last.elo} in ${last.year}; highest ${geo.peak.elo} in ${geo.peak.year}.`}
           tabIndex={0}
+          onPointerDown={(e) => setHover(nearest(e.clientX, e.currentTarget.getBoundingClientRect()))}
           onPointerMove={(e) => setHover(nearest(e.clientX, e.currentTarget.getBoundingClientRect()))}
-          onPointerLeave={() => setHover(null)}
+          onPointerLeave={(e) => e.pointerType === 'mouse' && setHover(null)} // a tapped point stays shown after the finger lifts
           onFocus={() => setHover(data.length - 1)}
           onBlur={() => setHover(null)}
           onKeyDown={(e) => {

@@ -10,6 +10,23 @@ npm run dev      # development server (hot reload) at http://localhost:5173
 npm start        # optimized build, faster, opens http://localhost:5173
 ```
 
+## Hosted version
+
+A static build runs at https://chess-coach-psi-tawny.vercel.app: game review, puzzles, lessons, openings, practice and insights all work in the browser. Two things only run on your own computer: the master database (built from TWIC, which is free for personal use only, so it is not published) and the Claude AI review (it needs your API key, which must never sit on a public site).
+
+```bash
+npm run build:static   # dist/ with puzzles exported as static JSON shards (needs data/puzzles.db)
+```
+
+## iPad and phones
+
+The layout is tuned for the iPad Air 11" in both orientations (and works on other tablets and phones):
+
+- **Sidebar**: full width on desktops, an icon rail with labels on tablets (761–1199 px), a bottom tab bar with a "More" sheet on phones.
+- **Boards fit the screen**: in landscape the puzzle, drill, play and review boards shrink just enough to show all eight ranks without scrolling. In portrait the review move buttons stay pinned to the bottom of the screen.
+- **Touch**: drag pieces or tap a piece and then its square; controls are at least 40–44 px; double-tapping ◀ ▶ never zooms the page; inputs use 16 px text so Safari doesn't zoom in when you type; puzzle themes are one row you swipe through; charts show the value under your finger (drag sideways to scrub).
+- **Home Screen app**: in Safari, Share → Add to Home Screen opens ChessCoach full screen with its own icon.
+
 ## Game review
 
 - Stockfish 19 (NNUE, WebAssembly) runs in several web workers in parallel.

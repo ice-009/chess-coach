@@ -68,8 +68,9 @@ export function LineChart({
           role="img"
           aria-label={`${title}: from ${fmt(data[0].y)} to ${fmt(last.y)}; highest ${fmt(geo.extreme.y)}.`}
           tabIndex={0}
+          onPointerDown={(e) => setHover(nearest(e.clientX, e.currentTarget.getBoundingClientRect()))}
           onPointerMove={(e) => setHover(nearest(e.clientX, e.currentTarget.getBoundingClientRect()))}
-          onPointerLeave={() => setHover(null)}
+          onPointerLeave={(e) => e.pointerType === 'mouse' && setHover(null)} // a tapped point stays shown after the finger lifts
           onFocus={() => setHover(data.length - 1)}
           onBlur={() => setHover(null)}
           onKeyDown={(e) => {

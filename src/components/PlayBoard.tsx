@@ -4,6 +4,7 @@ import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
 import { botMove, hintMove } from '../lib/bot';
 import type { Level } from '../lib/bot';
+import { useFitTop } from '../lib/useFitTop';
 import { Board } from './Board';
 
 export interface Goal {
@@ -31,6 +32,7 @@ interface Props {
 
 /** A game against the bot from any position, optionally with a drill goal. */
 export function PlayBoard({ startFen, userColor, level, goal, onFinish, children }: Props) {
+  const fitRef = useFitTop<HTMLDivElement>();
   const [fens, setFens] = useState([startFen]);
   const [sans, setSans] = useState<string[]>([]);
   const [lastMove, setLastMove] = useState<[string, string] | null>(null);
@@ -166,7 +168,7 @@ export function PlayBoard({ startFen, userColor, level, goal, onFinish, children
   const inCheck = new Chess(fen).inCheck();
 
   return (
-    <div className="puzzle-play">
+    <div className="puzzle-play" ref={fitRef}>
       <div className="puzzle-board">
         <Board id="play-board" fen={fen} orientation={userColor === 'w' ? 'white' : 'black'} onMove={result ? undefined : onMove} squares={squares} arrows={arrows} maxWidth={600} />
       </div>
