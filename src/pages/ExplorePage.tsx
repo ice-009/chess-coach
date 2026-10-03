@@ -11,6 +11,7 @@ import { Board } from '../components/Board';
 import { EvalBar } from '../components/EvalBar';
 import { MasterExplorer } from '../components/MasterExplorer';
 import { fetchStatus } from '../lib/masterDb';
+import { useFitTop } from '../lib/useFitTop';
 
 const START = new Chess().fen();
 const DEPTH = 18;
@@ -22,6 +23,7 @@ interface Hist {
 }
 
 export function ExplorePage({ initialFen }: { initialFen?: string }) {
+  const fitRef = useFitTop<HTMLDivElement>();
   const startFen = useMemo(() => {
     try {
       return initialFen ? new Chess(initialFen).fen() : START;
@@ -120,7 +122,7 @@ export function ExplorePage({ initialFen }: { initialFen?: string }) {
     <div>
       <h1>Analysis Board</h1>
       <p className="muted">A free analysis board. Move pieces for both sides; Stockfish shows the three best moves as arrows, with the plan behind each one.</p>
-      <div className="analysis">
+      <div className="analysis" ref={fitRef}>
         <div>
           <div className="board-wrap">
             <EvalBar whitePct={top ? whitePct : null} label={top ? formatScore(top.cp, top.mate) : undefined} flipped={flip} />

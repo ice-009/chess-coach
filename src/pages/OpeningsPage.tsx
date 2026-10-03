@@ -8,6 +8,7 @@ import { navigate } from '../lib/router';
 import { KEYS, load, save } from '../lib/storage';
 import { logActivity } from '../lib/activity';
 import { Board } from '../components/Board';
+import { useFitTop } from '../lib/useFitTop';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const fenAt = (moves: MoveNode[], ply: number) => (ply === 0 ? START : moves[ply - 1].fenAfter);
@@ -51,9 +52,9 @@ function Study({ opening, moves }: { opening: Opening; moves: MoveNode[] }) {
   const squares: Record<string, string> = last ? { [last.from]: 'rgba(250,204,21,0.4)', [last.to]: 'rgba(250,204,21,0.4)' } : {};
 
   return (
-    <div className="analysis">
-      <div>
-        <Board id="study-board" fen={fenAt(moves, ply)} orientation={opening.side} squares={squares} maxWidth={500} />
+    <>
+      <div className="op-board">
+        <Board id="study-board" fen={fenAt(moves, ply)} orientation={opening.side} squares={squares} maxWidth={560} />
         <div className="nav">
           <button onClick={() => setPly(0)} aria-label="Start">⏮</button>
           <button onClick={() => setPly((p) => Math.max(0, p - 1))} aria-label="Back">◀</button>
@@ -61,7 +62,7 @@ function Study({ opening, moves }: { opening: Opening; moves: MoveNode[] }) {
           <button onClick={() => setPly(moves.length)} aria-label="End">⏭</button>
         </div>
       </div>
-      <div className="panel">
+      <div className="panel op-panel">
         <div className="note big-note">
           {last ? (
             <>
@@ -74,7 +75,7 @@ function Study({ opening, moves }: { opening: Opening; moves: MoveNode[] }) {
         <MoveText moves={moves} ply={ply} onSelect={setPly} showComments />
         <button onClick={() => navigate(`explore?fen=${encodeURIComponent(fenAt(moves, ply))}`)}>Explore this position with the engine →</button>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -130,11 +131,11 @@ function Drill({ opening, line, moves, onComplete }: { opening: Opening; line: O
   const hint = myTurn && wrong >= 2 ? [moves[ply].uci] : [];
 
   return (
-    <div className="analysis">
-      <div>
-        <Board id="drill-board" fen={fenAt(moves, ply)} orientation={opening.side} onMove={onMove} squares={squares} arrows={hint} maxWidth={500} />
+    <>
+      <div className="op-board">
+        <Board id="drill-board" fen={fenAt(moves, ply)} orientation={opening.side} onMove={onMove} squares={squares} arrows={hint} maxWidth={560} />
       </div>
-      <div className="panel">
+      <div className="panel op-panel">
         <h3>Drill: {line.name}</h3>
         <div className="muted small">You play {opening.side}. The computer plays the other side’s book moves.</div>
         <div className="progress"><div style={{ width: `${(ply / moves.length) * 100}%` }} /></div>
@@ -153,7 +154,7 @@ function Drill({ opening, line, moves, onComplete }: { opening: Opening; line: O
         {feedback && <div className="note">{feedback}</div>}
         <button onClick={restart}>↺ Restart line</button>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -161,36 +162,44 @@ function OpeningView({ opening, lineId, mode }: { opening: Opening; lineId?: str
   const line = opening.lines.find((l) => l.id === lineId) ?? opening.lines[0];
   const moves = useMemo(() => parseLine(line.moves), [line.moves]);
   const { stats, bump } = useDrillStats();
+  const fitRef = useFitTop<HTMLDivElement>();
   const go = (l: string, m: string) => navigate(`openings/${opening.id}/${l}?mode=${m}`);
 
   return (
     <div>
       <button onClick={() => navigate('openings')}>← All openings</button>
-      <div className="eyebrow">{GROUPS.find((g) => g.id === opening.group)?.title} · ECO {opening.eco} · you play {opening.side}</div>
-      <h1>{opening.name}</h1>
-      <p>{opening.summary}</p>
-      <details className="ideas" open>
-        <summary>Key ideas</summary>
-        <ul>{opening.ideas.map((i) => <li key={i}>{i}</li>)}</ul>
-      </details>
+      {/* title and controls, then board + drill/study panel, then the background reading (placed by CSS grid areas) */}
+      <div className="opening-layout" ref={fitRef}>
+        <div className="op-head">
+          <div className="eyebrow">{GROUPS.find((g) => g.id === opening.group)?.title} · ECO {opening.eco} · you play {opening.side}</div>
+          <h1>{opening.name}</h1>
+          <div className="line-tabs">
+            {opening.lines.map((l) => (
+              <button key={l.id} className={`chip ${l.id === line.id ? 'on' : ''}`} onClick={() => go(l.id, mode)}>
+                {l.name} {stats[l.id] ? <span className="good">✓{stats[l.id]}</span> : null}
+              </button>
+            ))}
+          </div>
+          <div className="seg">
+            <button className={mode !== 'drill' ? 'on' : ''} onClick={() => go(line.id, 'study')}>📖 Study</button>
+            <button className={mode === 'drill' ? 'on' : ''} onClick={() => go(line.id, 'drill')}>🎯 Drill</button>
+          </div>
+        </div>
 
-      <div className="line-tabs">
-        {opening.lines.map((l) => (
-          <button key={l.id} className={`chip ${l.id === line.id ? 'on' : ''}`} onClick={() => go(l.id, mode)}>
-            {l.name} {stats[l.id] ? <span className="good">✓{stats[l.id]}</span> : null}
-          </button>
-        ))}
-      </div>
-      <div className="seg">
-        <button className={mode !== 'drill' ? 'on' : ''} onClick={() => go(line.id, 'study')}>📖 Study</button>
-        <button className={mode === 'drill' ? 'on' : ''} onClick={() => go(line.id, 'drill')}>🎯 Drill</button>
-      </div>
+        {mode === 'drill' ? (
+          <Drill key={line.id} opening={opening} line={line} moves={moves} onComplete={(clean) => clean && bump(line.id)} />
+        ) : (
+          <Study key={line.id} opening={opening} moves={moves} />
+        )}
 
-      {mode === 'drill' ? (
-        <Drill key={line.id} opening={opening} line={line} moves={moves} onComplete={(clean) => clean && bump(line.id)} />
-      ) : (
-        <Study key={line.id} opening={opening} moves={moves} />
-      )}
+        <div className="op-about">
+          <p>{opening.summary}</p>
+          <details className="ideas" open>
+            <summary>Key ideas</summary>
+            <ul>{opening.ideas.map((i) => <li key={i}>{i}</li>)}</ul>
+          </details>
+        </div>
+      </div>
     </div>
   );
 }

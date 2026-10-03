@@ -10,6 +10,7 @@ import { DeviceDatabase } from '../components/DeviceDatabase';
 import { DbGamesSearch } from './DbGamesSearch';
 import { DbPlayerDossier, DbPlayers } from './DbPlayer';
 import { DbGameViewer } from './DbGameViewer';
+import { useFitTop } from '../lib/useFitTop';
 
 const SIZES = [
   { issues: 52, label: 'Last year', note: 'recommended to start' },
@@ -76,6 +77,7 @@ function DbSetup({ status, onStarted, update }: { status: DbStatus; onStarted: (
 }
 
 function DbExplorer({ initialLine }: { initialLine?: string }) {
+  const fitRef = useFitTop<HTMLDivElement>();
   const start = useMemo(() => {
     const c = new Chess();
     const fens = [c.fen()];
@@ -161,7 +163,7 @@ function DbExplorer({ initialLine }: { initialLine?: string }) {
   );
 
   return (
-    <div className="analysis db-explorer">
+    <div className="analysis db-explorer" ref={fitRef}>
       <div>
         <Board id="db-board" fen={fen} orientation={flip ? 'black' : 'white'} onMove={onMove} squares={squares} />
         <div className="nav">
