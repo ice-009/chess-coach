@@ -1,0 +1,228 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Square } from 'chess.js';
+import { GROUPS, OPENINGS, findOpening } from '../data/openings';
+import type { Opening, OpeningLine } from '../data/openings';
+import { parseLine } from '../lib/chess';
+import type { MoveNode } from '../lib/chess';
+import { navigate } from '../lib/router';
+import { KEYS, load, save } from '../lib/storage';
+import { logActivity } from '../lib/activity';
+import { Board } from '../components/Board';
+
+const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const fenAt = (moves: MoveNode[], ply: number) => (ply === 0 ? START : moves[ply - 1].fenAfter);
+
+function useDrillStats() {
+  const [stats, setStats] = useState<Record<string, number>>(() => load(KEYS.openingsDone, {}));
+  const bump = (id: string) => {
+    logActivity('opening');
+    const next = { ...stats, [id]: (stats[id] ?? 0) + 1 };
+    save(KEYS.openingsDone, next);
+    setStats(next);
+  };
+  return { stats, bump };
+}
+
+function MoveText({ moves, ply, onSelect, showComments }: { moves: MoveNode[]; ply: number; onSelect: (p: number) => void; showComments: boolean }) {
+  return (
+    <div className="book">
+      {moves.map((m, i) => (
+        <span key={i}>
+          {i % 2 === 0 && <span className="muted">{i / 2 + 1}. </span>}
+          <button className={`move inline ${ply === i + 1 ? 'active' : ''}`} onClick={() => onSelect(i + 1)}>{m.san}</button>{' '}
+          {showComments && m.comment && <span className="book-note">{m.comment} </span>}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function Study({ opening, moves }: { opening: Opening; moves: MoveNode[] }) {
+  const [ply, setPly] = useState(0);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') setPly((p) => Math.max(0, p - 1));
+      if (e.key === 'ArrowRight') setPly((p) => Math.min(moves.length, p + 1));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [moves.length]);
+  const last = ply > 0 ? moves[ply - 1] : null;
+  const squares: Record<string, string> = last ? { [last.from]: 'rgba(250,204,21,0.4)', [last.to]: 'rgba(250,204,21,0.4)' } : {};
+
+  return (
+    <div className="analysis">
+      <div>
+        <Board id="study-board" fen={fenAt(moves, ply)} orientation={opening.side} squares={squares} maxWidth={500} />
+        <div className="nav">
+          <button onClick={() => setPly(0)} aria-label="Start">⏮</button>
+          <button onClick={() => setPly((p) => Math.max(0, p - 1))} aria-label="Back">◀</button>
+          <button onClick={() => setPly((p) => Math.min(moves.length, p + 1))} aria-label="Forward">▶</button>
+          <button onClick={() => setPly(moves.length)} aria-label="End">⏭</button>
+        </div>
+      </div>
+      <div className="panel">
+        <div className="note big-note">
+          {last ? (
+            <>
+              <b>{Math.ceil(ply / 2)}{ply % 2 ? '.' : '…'} {last.san}</b> {last.comment ?? ''}
+            </>
+          ) : (
+            'Press ▶ or the → key to step through the line. Each important move is explained.'
+          )}
+        </div>
+        <MoveText moves={moves} ply={ply} onSelect={setPly} showComments />
+        <button onClick={() => navigate(`explore?fen=${encodeURIComponent(fenAt(moves, ply))}`)}>Explore this position with the engine →</button>
+      </div>
+    </div>
+  );
+}
+
+function Drill({ opening, line, moves, onComplete }: { opening: Opening; line: OpeningLine; moves: MoveNode[]; onComplete: (clean: boolean) => void }) {
+  const myColor = opening.side === 'white' ? 'w' : 'b';
+  const [ply, setPly] = useState(0);
+  const [wrong, setWrong] = useState(0); // wrong tries on the current move
+  const [mistakes, setMistakes] = useState(0);
+  const [feedback, setFeedback] = useState('');
+  const done = ply >= moves.length;
+  const myTurn = !done && moves[ply].fenBefore.split(' ')[1] === myColor;
+
+  // the computer plays the opponent's moves
+  useEffect(() => {
+    if (done || myTurn) return;
+    const t = setTimeout(() => setPly((p) => p + 1), 450);
+    return () => clearTimeout(t);
+  }, [ply, done, myTurn]);
+
+  // report completion once, when the last move of the line is played
+  const reported = useRef(false);
+  useEffect(() => {
+    if (!done || reported.current) return;
+    reported.current = true;
+    onComplete(mistakes === 0);
+  }, [done, mistakes, onComplete]);
+
+  function onMove(from: Square, to: Square): boolean {
+    if (!myTurn) return false;
+    const expected = moves[ply];
+    if (from === expected.from && to === expected.to) {
+      setFeedback(expected.comment ? `✓ ${expected.san}: ${expected.comment}` : `✓ ${expected.san}`);
+      setWrong(0);
+      setPly(ply + 1);
+      return true;
+    }
+    setMistakes((m) => m + 1);
+    setWrong((w) => w + 1);
+    setFeedback(wrong === 0 ? 'Not the move in this line. Think about the ideas and try again.' : `The line continues ${expected.san}. Play it to continue.`);
+    return false;
+  }
+
+  function restart() {
+    reported.current = false;
+    setPly(0);
+    setWrong(0);
+    setMistakes(0);
+    setFeedback('');
+  }
+
+  const last = ply > 0 ? moves[ply - 1] : null;
+  const squares: Record<string, string> = last ? { [last.from]: 'rgba(250,204,21,0.4)', [last.to]: 'rgba(250,204,21,0.4)' } : {};
+  const hint = myTurn && wrong >= 2 ? [moves[ply].uci] : [];
+
+  return (
+    <div className="analysis">
+      <div>
+        <Board id="drill-board" fen={fenAt(moves, ply)} orientation={opening.side} onMove={onMove} squares={squares} arrows={hint} maxWidth={500} />
+      </div>
+      <div className="panel">
+        <h3>Drill: {line.name}</h3>
+        <div className="muted small">You play {opening.side}. The computer plays the other side’s book moves.</div>
+        <div className="progress"><div style={{ width: `${(ply / moves.length) * 100}%` }} /></div>
+        {done ? (
+          <div className={mistakes ? 'warn' : 'good'}>
+            {mistakes ? `Line complete with ${mistakes} slip${mistakes > 1 ? 's' : ''}. Run it again until it’s clean!` : '✓ Perfect! You played the whole line from memory.'}
+            <div style={{ marginTop: 8 }}>
+              <button className="link" onClick={() => navigate(`practice?fen=${encodeURIComponent(fenAt(moves, moves.length))}&color=${myColor}`)}>
+                Play on from here against the computer →
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="turn">{myTurn ? 'Your move' : 'Opponent is thinking…'}</div>
+        )}
+        {feedback && <div className="note">{feedback}</div>}
+        <button onClick={restart}>↺ Restart line</button>
+      </div>
+    </div>
+  );
+}
+
+function OpeningView({ opening, lineId, mode }: { opening: Opening; lineId?: string; mode: string }) {
+  const line = opening.lines.find((l) => l.id === lineId) ?? opening.lines[0];
+  const moves = useMemo(() => parseLine(line.moves), [line.moves]);
+  const { stats, bump } = useDrillStats();
+  const go = (l: string, m: string) => navigate(`openings/${opening.id}/${l}?mode=${m}`);
+
+  return (
+    <div>
+      <button onClick={() => navigate('openings')}>← All openings</button>
+      <div className="eyebrow">{GROUPS.find((g) => g.id === opening.group)?.title} · ECO {opening.eco} · you play {opening.side}</div>
+      <h1>{opening.name}</h1>
+      <p>{opening.summary}</p>
+      <details className="ideas" open>
+        <summary>Key ideas</summary>
+        <ul>{opening.ideas.map((i) => <li key={i}>{i}</li>)}</ul>
+      </details>
+
+      <div className="line-tabs">
+        {opening.lines.map((l) => (
+          <button key={l.id} className={`chip ${l.id === line.id ? 'on' : ''}`} onClick={() => go(l.id, mode)}>
+            {l.name} {stats[l.id] ? <span className="good">✓{stats[l.id]}</span> : null}
+          </button>
+        ))}
+      </div>
+      <div className="seg">
+        <button className={mode !== 'drill' ? 'on' : ''} onClick={() => go(line.id, 'study')}>📖 Study</button>
+        <button className={mode === 'drill' ? 'on' : ''} onClick={() => go(line.id, 'drill')}>🎯 Drill</button>
+      </div>
+
+      {mode === 'drill' ? (
+        <Drill key={line.id} opening={opening} line={line} moves={moves} onComplete={(clean) => clean && bump(line.id)} />
+      ) : (
+        <Study key={line.id} opening={opening} moves={moves} />
+      )}
+    </div>
+  );
+}
+
+export function OpeningsPage({ openingId, lineId, mode }: { openingId?: string; lineId?: string; mode: string }) {
+  const { stats } = useDrillStats();
+  if (openingId) {
+    const o = findOpening(openingId);
+    return o ? <OpeningView opening={o} lineId={lineId} mode={mode} /> : <div className="error">Opening not found.</div>;
+  }
+  return (
+    <div>
+      <h1>Openings</h1>
+      <p className="muted">A complete, beginner-friendly repertoire. <b>Study</b> a line to understand the ideas, then <b>Drill</b> it: you play your side, the computer plays the other, until you know it cold.</p>
+      {GROUPS.map((g) => (
+        <section key={g.id} className="chapter">
+          <h2>{g.title}</h2>
+          <p className="muted">{g.blurb}</p>
+          <div className="cards">
+            {OPENINGS.filter((o) => o.group === g.id).map((o) => {
+              const drilled = o.lines.filter((l) => stats[l.id]).length;
+              return (
+                <button key={o.id} className="card" onClick={() => navigate(`openings/${o.id}`)}>
+                  <div className="card-title">{o.name}</div>
+                  <div className="muted small">{o.eco} · {o.lines.length} line{o.lines.length > 1 ? 's' : ''} · {drilled}/{o.lines.length} drilled</div>
+                  <div className="card-body">{o.summary}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
