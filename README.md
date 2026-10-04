@@ -14,10 +14,14 @@ npm start        # optimized build, faster, opens http://localhost:5173
 
 A static build runs at https://chess-coach-psi-tawny.vercel.app: game review, puzzles, lessons, openings, practice and insights all work in the browser. Two things only run on your own computer: the master database (built from TWIC, which is free for personal use only, so it is not published) and the Claude AI review (it needs your API key, which must never sit on a public site).
 
+Every push to `main` on GitHub deploys it: Vercel runs `npm run build:static` (see `vercel.json`) and publishes `dist/`, plus the accounts function in `api/`.
+
 ```bash
-npm run build:static   # dist/ with puzzles exported as static JSON shards (needs data/puzzles.db)
-npm run deploy         # build:static, then publish deploy/chess-coach to Vercel production
+npm run build:static   # the hosted build in dist/ (puzzles come from public/puzzles)
+npm run deploy         # publish this Mac's build (e.g. uncommitted changes) without pushing
 ```
+
+The puzzles are static JSON files in `public/puzzles/` (Lichess puzzles are CC0, so they may be published). To refresh them: `npm run puzzles:update`, then `npm run puzzles:export`, and commit `public/puzzles`.
 
 ## Offline on your iPad or Android phone (e.g. on a flight)
 

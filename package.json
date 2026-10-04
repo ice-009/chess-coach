@@ -17,12 +17,12 @@
     "db:update": "node --experimental-strip-types --no-warnings scripts/db/update.ts",
     "db:export": "node --experimental-strip-types --no-warnings scripts/db/export.ts",
     "puzzles:update": "node --experimental-strip-types --no-warnings scripts/puzzles/build.ts",
-    "build:static": "tsc -b && VITE_STATIC_HOST=1 vite build && node --experimental-strip-types --no-warnings scripts/puzzles/export-static.ts dist/puzzles",
+    "build:static": "tsc -b && VITE_STATIC_HOST=1 vite build",
     "deploy": "node --experimental-strip-types --no-warnings scripts/deploy.ts",
     "test:account": "node tests/account.mjs",
     "test:account-api": "node --experimental-strip-types --no-warnings tests/account-api.ts",
-    "vercel-build": "echo 'The hosted site is deployed from the Mac with npm run deploy (it needs the local puzzle files); a Git build would replace it with one that has no puzzles or offline mode.' && exit 1",
-    "test:offline": "node tests/offline.mjs"
+    "test:offline": "node tests/offline.mjs",
+    "puzzles:export": "node --experimental-strip-types --no-warnings scripts/puzzles/export-static.ts public/puzzles"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

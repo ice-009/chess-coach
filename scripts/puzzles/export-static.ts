@@ -1,6 +1,6 @@
 // Exports data/puzzles.db as static JSON files for the hosted build (Lichess puzzles are CC0, so they may be
 // published). Layout: manifest.json, b<band>.json (one per 50-point rating band), idx/<charCode>.json (id → band).
-// Usage: node --experimental-strip-types scripts/puzzles/export-static.ts <outDir>
+// Usage: npm run puzzles:export (writes public/puzzles, which is committed and copied into every build)
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
