@@ -20,7 +20,8 @@
     "build:static": "tsc -b && VITE_STATIC_HOST=1 vite build && node --experimental-strip-types --no-warnings scripts/puzzles/export-static.ts dist/puzzles",
     "deploy": "node --experimental-strip-types --no-warnings scripts/deploy.ts",
     "test:account": "node tests/account.mjs",
-    "test:account-api": "node --experimental-strip-types --no-warnings tests/account-api.ts"
+    "test:account-api": "node --experimental-strip-types --no-warnings tests/account-api.ts",
+    "vercel-build": "echo 'The hosted site is deployed from the Mac with npm run deploy (it needs the local puzzle files); a Git build would replace it with one that has no puzzles or offline mode.' && exit 1"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
