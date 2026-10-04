@@ -60,23 +60,23 @@ function status() {
   return { ready: true, meta: meta(sql), bytes: pages.page_count * size.page_size };
 }
 
-/** Streams the file into OPFS in chunks, so a database of any size fits in memory. */
+const CHUNK = 8 * 1024 * 1024;
+
+/**
+ * Copies the file into OPFS 8 MB at a time, so a database of any size fits in memory. Reads slices rather
+ * than file.stream(): WebKit's stream of a very large file can fail ("Too much data buffered").
+ */
 async function importFile(id: number, file: File) {
   if (!pool) throw new Error('Storage is not available in this browser.');
   close();
-  const reader = file.stream().getReader();
   let loaded = 0;
-  let lastReport = 0;
   try {
     await pool.importDb(FILE, async () => {
-      const { done, value } = await reader.read();
-      if (done) return undefined;
-      loaded += value.byteLength;
-      if (loaded - lastReport > 8 * 1024 * 1024) {
-        lastReport = loaded;
-        postMessage({ id, progress: loaded / file.size } satisfies LocalDbReply);
-      }
-      return value;
+      if (loaded >= file.size) return undefined;
+      const chunk = new Uint8Array(await file.slice(loaded, loaded + CHUNK).arrayBuffer());
+      loaded += chunk.byteLength;
+      postMessage({ id, progress: loaded / file.size } satisfies LocalDbReply);
+      return chunk;
     });
     open();
     if (!sql) throw new Error('The file could not be opened.');

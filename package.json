@@ -21,7 +21,8 @@
     "deploy": "node --experimental-strip-types --no-warnings scripts/deploy.ts",
     "test:account": "node tests/account.mjs",
     "test:account-api": "node --experimental-strip-types --no-warnings tests/account-api.ts",
-    "vercel-build": "echo 'The hosted site is deployed from the Mac with npm run deploy (it needs the local puzzle files); a Git build would replace it with one that has no puzzles or offline mode.' && exit 1"
+    "vercel-build": "echo 'The hosted site is deployed from the Mac with npm run deploy (it needs the local puzzle files); a Git build would replace it with one that has no puzzles or offline mode.' && exit 1",
+    "test:offline": "node tests/offline.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
