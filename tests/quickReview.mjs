@@ -35,8 +35,10 @@ const check = (ok, msg) => {
 };
 
 for (const [name, engine, opts] of [
-  ['chrome', chromium, { viewport: { width: 1366, height: 860 } }],
-  ['webkit (iPad)', webkit, { viewport: { width: 1180, height: 820 }, hasTouch: true }],
+  ['chrome', chromium, { viewport: { width: 1366, height: 860 }, serviceWorkers: 'block' }],
+  // the offline worker is off here: in WebKit the test tool can't fake responses to requests the worker makes
+  // (tests/offline.mjs covers the worker)
+  ['webkit (iPad)', webkit, { viewport: { width: 1180, height: 820 }, hasTouch: true, serviceWorkers: 'block' }],
 ]) {
   console.log(name);
   const browser = engine === chromium ? await chromium.launch().catch(() => chromium.launch({ channel: 'chrome' })) : await webkit.launch();
