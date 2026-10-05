@@ -37,6 +37,8 @@ export const NavIcons: Record<string, ReactNode> = {
   masters: <svg viewBox="0 0 24 24" {...P}><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z" /><path d="M5 21h14" /></svg>,
   database: <svg viewBox="0 0 24 24" {...P}><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5" /><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" /></svg>,
   insights: <svg viewBox="0 0 24 24" {...P}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>,
+  soundOn: <svg viewBox="0 0 24 24" {...P}><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M16 9a4 4 0 0 1 0 6" /><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11" /></svg>,
+  soundOff: <svg viewBox="0 0 24 24" {...P}><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M17 10l4 4M21 10l-4 4" /></svg>,
   account: <svg viewBox="0 0 24 24" {...P}><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6" /></svg>,
   offline: <svg viewBox="0 0 24 24" {...P}><path d="M12 3v12" /><path d="M7 10l5 5 5-5" /><path d="M4 17v3h16v-3" /></svg>,
   practice: <svg viewBox="0 0 24 24" {...P}><path d="M6 3h12l-1 6H7z" /><path d="M9 9v4a3 3 0 0 0 6 0V9" /><path d="M12 16v3M8 21h8" /></svg>,

@@ -18,6 +18,9 @@ import { navigate } from '../lib/router';
 import { KEYS, getMe, load, save } from '../lib/storage';
 import { STATIC_HOST } from '../lib/host';
 import { LineChart } from '../components/LineChart';
+import { clockSummary, tiltCheck } from '../lib/clockStats';
+import type { ClockSummary } from '../lib/clockStats';
+import { commonMistake } from '../lib/quickReviews';
 import { SyncBadge } from '../components/SyncBadge';
 
 // activity heatmap: ordinal one-hue ramp, validated against the panel surface (all steps pass, light end 2.56:1)
@@ -191,7 +194,54 @@ function ConnectChessCom({ onSet }: { onSet: (u: string) => void }) {
 const KIND_LABEL: Record<string, [string, string]> = {
   puzzle: ['puzzle', 'puzzles'], review: ['review', 'reviews'], lesson: ['lesson', 'lessons'], drill: ['drill', 'drills'],
   game: ['game reviewed', 'games reviewed'], vision: ['vision run', 'vision runs'], opening: ['opening line', 'opening lines'],
+  safety: ['safety check', 'safety checks'],
 };
+
+/** A goal meter: the value as a bar, a tick at the goal, and the verdict in words (not colour alone). */
+function Meter({ label, value, pct, goal, ok, goalText }: { label: string; value: string; pct: number; goal: number; ok: boolean; goalText: string }) {
+  return (
+    <div className={`meter ${ok ? 'ok' : 'off'}`}>
+      <div className="row-between">
+        <span>{label}</span>
+        <b>{value}</b>
+      </div>
+      <div className="meter-bar" role="img" aria-label={`${label}: ${value}, ${goalText}, ${ok ? 'goal met' : 'not yet'}`}>
+        <span style={{ width: `${Math.min(100, pct)}%` }} />
+        <i style={{ left: `${goal}%` }} />
+      </div>
+      <div className="muted small">{ok ? '✓ ' : '○ '}{goalText}</div>
+    </div>
+  );
+}
+
+/** Time used in your recent games (oldest to newest), against the goal line. */
+function ClockCard({ clock, timeClass, days }: { clock: ClockSummary; timeClass: string; days: number }) {
+  const advice = !clock.usedOk && !clock.fastOk
+    ? `You finish your games with ${(clock.baseMin - clock.usedMin).toFixed(1)} minutes left on average. Spend them: before every capture, check or threat, take 10 seconds.`
+    : !clock.usedOk
+      ? 'You still finish with plenty of time left. Use it on the critical moves.'
+      : !clock.fastOk
+        ? 'Good overall, but too many instant moves. Take a few seconds even on “obvious” ones.'
+        : 'Good clock use: you’re thinking before you move.';
+  return (
+    <section className="panel p-clock">
+      <div className="row-between">
+        <h3>Your clock</h3>
+        <span className="muted small">{timeClass} · last {days} days · {clock.games} game{clock.games === 1 ? '' : 's'}</span>
+      </div>
+      <Meter label="Time used per game" value={`${clock.usedMin} of ${clock.baseMin} min`} pct={clock.usedPct} goal={clock.goals.usedPct} ok={clock.usedOk} goalText={`goal: use ${clock.goals.usedPct}%+ of your clock`} />
+      <Meter label="Moves in under 5 seconds" value={`${clock.fastShare}%`} pct={clock.fastShare} goal={clock.goals.fastShare} ok={clock.fastOk} goalText={`goal: under ${clock.goals.fastShare}%`} />
+      <div className="clock-games" role="img" aria-label={`Clock used in your last ${clock.recent.length} games: ${clock.recent.map((g) => `${g.usedPct}%`).reverse().join(', ')}`}>
+        {[...clock.recent].reverse().map((g) => (
+          <span key={g.url} className={`cg ${g.outcome}`} style={{ height: `${Math.max(4, g.usedPct)}%` }} title={`${new Date(g.end).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}: ${g.outcome}, ${Math.round(g.used / 60)} of ${Math.round(g.base / 60)} min used`} />
+        ))}
+        <i className="goal-line" style={{ bottom: `${clock.goals.usedPct}%` }} />
+      </div>
+      <div className="clock-legend muted small"><span><i className="cg-key win" />won</span><span><i className="cg-key loss" />lost</span><span><i className="cg-key draw" />drawn</span><span className="dash-key">goal</span></div>
+      <p className="muted small clock-advice">{advice}</p>
+    </section>
+  );
+}
 
 /** The last 12 weeks, one column per week (Monday on top), and a readout for the day you point at. */
 function Heatmap() {
@@ -282,7 +332,10 @@ export function HomePage() {
     const h = historyOf(cls).filter((p) => p.x > Date.now() - days * DAY);
     return h.length ? (ratingOf(cls) ?? h[h.length - 1].y) - h[0].y : 0;
   };
-  const tiles = [...classes].sort((a, b) => rows.filter((r) => r.timeClass === b).length - rows.filter((r) => r.timeClass === a).length).slice(0, 2);
+  // rapid leads when you play it (it's the rating that reflects how well you think); otherwise your most played
+  const recentRapid = rows.some((r) => r.timeClass === 'rapid' && +r.date > Date.now() - 30 * DAY);
+  const count = (c: string) => rows.filter((r) => r.timeClass === c).length;
+  const tiles = [...classes].sort((a, b) => (recentRapid ? Number(b === 'rapid') - Number(a === 'rapid') : 0) || count(b) - count(a)).slice(0, 2);
   const month = rows.filter((r) => +r.date > Date.now() - 30 * DAY);
   const rec = overview(month).all;
   const puzzleDelta = (() => {
@@ -294,6 +347,7 @@ export function HomePage() {
   const latestUnreviewedLoss = rows.find((r) => r.outcome === 'loss' && !acc[r.game.url]);
   const plan = [
     { label: `Solve 10 puzzles (${Math.min(10, day.puzzle ?? 0)}/10)`, short: 'Solve 10 puzzles', why: 'Daily tactics are the fastest way to stop missing threats.', done: (day.puzzle ?? 0) >= 10, href: '#/train' },
+    { label: `10 “Is it safe?” checks (${Math.min(10, day.safety ?? 0)}/10)`, short: 'Do 10 “Is it safe?” checks', why: 'The few seconds’ check before every move keeps your pieces on the board.', done: (day.safety ?? 0) >= 10, href: '#/train/safe' },
     // missed puzzles that are due again (or, once cleared today, a done item; nothing to show before that)
     ...(due > 0 || (day.review ?? 0) > 0
       ? [{ label: due ? `Clear your review queue (${due} due)` : 'Review queue cleared', short: `Review ${due} missed puzzle${due > 1 ? 's' : ''}`, why: 'Puzzles you missed come back until you solve them cleanly.', done: due === 0, href: '#/train/review' }]
@@ -317,12 +371,27 @@ export function HomePage() {
   const current = mainRating ? Math.max(0, allStages.findIndex((st) => mainRating < st.range[1])) : 0;
   const nextStep = allStages[current]?.items.find((it) => it.done === false);
 
+  // ── the clock and tilt coach ──
+  // rapid is where thinking time pays: coach it whenever you play it; bullet is too fast to coach
+  const clockClass = recentRapid ? 'rapid' : tiles[0] === 'bullet' ? null : (tiles[0] ?? null);
+  const games = rows.map((r) => r.game);
+  let clockDays = 7;
+  let clock = me && clockClass ? clockSummary(games, me, clockClass, 7) : null;
+  if (!clock && me && clockClass) {
+    clock = clockSummary(games, me, clockClass, 30);
+    clockDays = 30;
+  }
+  const tilt = me ? tiltCheck(games, me) : null;
+  const habit = commonMistake();
+
   // ── what to work on: the few things that would gain the most ──
   const focus: Focus[] = [];
   if (latestUnreviewedLoss) {
     const r = latestUnreviewedLoss;
     focus.push({ icon: '🔎', title: 'Review your latest loss', why: `vs ${r.game[r.color === 'w' ? 'black' : 'white'].username} (${r.oppRating}), ${r.family}, ${ago(+r.date)}.`, href: `#/games/${me}?game=${encodeURIComponent(r.game.url)}`, action: 'Review game' });
   }
+  if (habit && habit.count >= 2) focus.push({ icon: '📌', title: `Your most common mistake: ${habit.label.toLowerCase()}`, why: habit.rule, href: '#/train/safe', action: 'Practise' });
+  if (clock && !clock.fastOk) focus.push({ icon: '⏱️', title: 'Slow down', why: `${clock.fastShare}% of your ${clockClass} moves take under 5 seconds, and you use ${clock.usedMin} of ${clock.baseMin} minutes.`, href: '#/train/safe', action: 'Is it safe?' });
   for (const x of recommendations(null, rows, openingStats(rows))) focus.push({ icon: x.title.startsWith('Fix') ? '♟️' : '⏱️', ...x });
   const byColor = overview(rows);
   if (byColor.white.n >= 8 && byColor.black.n >= 8 && Math.abs(scorePct(byColor.white) - scorePct(byColor.black)) >= 15) {
@@ -373,6 +442,22 @@ export function HomePage() {
           <div className="row">
             <button className="btn-green" onClick={() => navigate('account')}>Create account</button>
             <button className="btn-ghost" aria-label="Hide" onClick={() => { save(KEYS.me + '-nudge-hidden', true); setNudgeHidden(true); }}>✕</button>
+          </div>
+        </div>
+      )}
+
+      {tilt?.stop && (
+        <div className="nudge tilt" role="status">
+          <span className="nudge-icon">🧊</span>
+          <div>
+            <b>{tilt.streak} losses in a row. Time for a break.</b>{' '}
+            <span className="muted">
+              Take 15 minutes, or warm up with 10 “Is it safe?” checks before your next game.
+              {tilt.afterLoss && tilt.afterWin ? ` Right after a loss you win ${tilt.afterLoss.winRate}% of your games; after a win, ${tilt.afterWin.winRate}%.` : ''}
+            </span>
+          </div>
+          <div className="row">
+            <a className="btn-secondary" href="#/train/safe">Warm up</a>
           </div>
         </div>
       )}
@@ -525,6 +610,8 @@ export function HomePage() {
               </ul>
             </section>
           )}
+
+          {clock && clockClass && <ClockCard clock={clock} timeClass={clockClass} days={clockDays} />}
 
           <section className="panel p-skills">
             <h3>Skills</h3>

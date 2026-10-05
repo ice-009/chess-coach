@@ -889,15 +889,17 @@ select, select.chip-select {
 select.chip-select { padding-right: 30px; }
 
 /* ── Account: nav entry, sign-in, profile ── */
-.side-account.in-rail { margin-top: auto; border-top: 1px solid var(--line); }
-.side-account.in-sheet { display: none; }
+.sound-toggle.in-rail { margin-top: auto; border-top: 1px solid var(--line); font-size: 0.85rem; }
+.side-account.in-rail { border-top: 1px solid var(--line); }
+.side-account.in-sheet, .sound-toggle.in-sheet { display: none; }
+.sound-toggle[aria-pressed='false'] { color: var(--muted); }
 .side-account .side-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .nav-avatar { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 0.8rem; font-weight: 900; }
 .nav-avatar svg { width: 22px; height: 22px; }
 .nav-avatar.in { background: var(--green); color: #fff; }
 @media (max-width: 760px) {
-  .side-account.in-rail { display: none; }
-  .more-panel .side-account.in-sheet { display: flex; }
+  .side-account.in-rail, .sound-toggle.in-rail { display: none; }
+  .more-panel .side-account.in-sheet, .more-panel .sound-toggle.in-sheet { display: flex; }
 }
 @media (min-width: 761px) and (max-width: 1199px) { .side-account .side-label { max-width: 76px; } }
 
@@ -1071,7 +1073,7 @@ a.kpi:hover { border-color: #4b4847; background: #2b2926; }
   /* one column: what to do comes before how it's going */
   .dash-grid { display: flex; flex-direction: column; }
   .dash-col { display: contents; }
-  .p-plan { order: 1; } .p-focus { order: 2; } .p-chart { order: 3; } .p-recent { order: 4; } .p-skills { order: 5; } .p-activity { order: 6; }
+  .p-plan { order: 1; } .p-focus { order: 2; } .p-clock { order: 3; } .p-chart { order: 4; } .p-recent { order: 5; } .p-skills { order: 6; } .p-activity { order: 7; }
   .heat, .heat-foot { max-width: 440px; }
 }
 @media (max-width: 760px) {
@@ -1096,3 +1098,108 @@ a.kpi:hover { border-color: #4b4847; background: #2b2926; }
   .seg.mini button { min-height: 38px; }
   .heat-day.picked { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px #fff; }
 }
+
+/* ── Board: promotion picker (a column of pieces over the promotion square, like chess.com) ── */
+.board-box { position: relative; }
+.promo-backdrop { position: absolute; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.35); border-radius: 3px; }
+.promo-column {
+  position: absolute; width: 12.5%; display: flex; flex-direction: column; background: #fff; border-radius: 4px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); overflow: hidden;
+}
+.promo-piece { aspect-ratio: 1; width: 100%; padding: 6%; display: grid; place-items: center; background: #fff; }
+.promo-piece:hover, .promo-piece:focus-visible { background: #e8e8e8; outline: none; }
+.promo-piece svg { width: 100%; height: 100%; }
+.promo-cancel { height: 26px; font-size: 0.8rem; font-weight: 800; color: #555; background: #f1f1f1; }
+.promo-cancel:hover { background: #e2e2e2; }
+
+/* ── Captured pieces and material lead next to a player's name ── */
+.captured { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; }
+.cap-group { display: inline-flex; }
+.cap-piece { width: 17px; height: 17px; display: inline-block; }
+.cap-group .cap-piece + .cap-piece { margin-left: -9px; } /* a stack of the same piece overlaps, like chess.com */
+.cap-lead { color: var(--muted); font-size: 0.8rem; font-weight: 800; margin-left: 2px; }
+
+/* ── Play against the computer: bars above and below the board, so the board column leaves room for them ── */
+.puzzle-play.with-bars {
+  grid-template-columns: minmax(0, min(600px, max(340px, calc(100vh - var(--fit-top, 250px) - 100px)))) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, min(600px, max(340px, calc(100dvh - var(--fit-top, 250px) - 100px)))) minmax(260px, 1fr);
+}
+.play-bar { min-height: 38px; padding: 4px 0; }
+.play-bar .avatar { font-size: 1rem; }
+.thinking { display: inline-flex; gap: 3px; margin-left: auto; }
+.thinking i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: think 1s infinite ease-in-out; }
+.thinking i:nth-child(2) { animation-delay: 0.15s; }
+.thinking i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes think { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+@media (max-width: 880px) { .puzzle-play.with-bars { grid-template-columns: 1fr; } }
+
+/* ── Quick Review: the moments that decided the game ── */
+.center { text-align: center; }
+.quick-start { margin-top: 6px; }
+.quick-card { display: flex; flex-direction: column; gap: 12px; }
+.quick-progress { display: flex; align-items: center; gap: 6px; }
+.quick-progress > span:not(.muted) { width: 26px; height: 6px; border-radius: 3px; background: var(--panel-3); }
+.quick-progress > span.done { background: var(--green); }
+.quick-progress > span.on { background: var(--green-hi); box-shadow: 0 0 0 2px rgba(163, 209, 96, 0.25); }
+.quick-progress .muted { margin-left: 6px; }
+.quick-title { font-size: 1.15rem; margin: 0; }
+.quick-title.mistake { color: #ffb4a8; }
+.quick-title.missed-win { color: var(--gold); }
+.quick-context { margin: 0; }
+.quick-fast { color: #ff8a7a; }
+.quick-task { background: var(--bg-deep); border-radius: 8px; padding: 12px; line-height: 1.5; border-left: 4px solid #5c8bb0; }
+.quick-task.wrong { border-left-color: var(--red); }
+.quick-result { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; border-radius: 8px; padding: 10px 12px; }
+.quick-result.good { background: #2f3a26; }
+.quick-result.bad { background: #3a2624; }
+.chip-label { font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: var(--text-2); }
+.quick-explain { margin: 0; color: var(--text); }
+.quick-why .eyebrow { margin-top: 0; }
+.quick-time { background: #3a2f1f; color: #ffd8a0; border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; }
+.quick-rule { display: flex; gap: 10px; background: #2f3a26; border-left: 4px solid var(--green); border-radius: 8px; padding: 12px; line-height: 1.5; color: #e8f2dc; }
+.quick-rule > span { font-size: 1.2rem; }
+.quick-summary h3 { font-size: 1.2rem; margin: 0; }
+.quick-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.quick-list li.ok .link { color: var(--green-hi); }
+.quick-list li.bad .link { color: #ff8a7a; }
+.quick-rules { margin: 0; padding-left: 20px; line-height: 1.6; color: var(--text-2); }
+
+/* ── "Is it safe?" drill ── */
+.board-placeholder { aspect-ratio: 1; width: 100%; max-width: 600px; background: var(--panel); border-radius: 4px; display: grid; place-items: center; align-content: center; gap: 10px; }
+.safety-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.safety-stats div { background: var(--bg-deep); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+.safety-stats b { font-size: 1.4rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.safety-stats span { color: var(--muted); font-size: 0.75rem; font-weight: 700; }
+.quick-progress > span.missed { background: var(--red); }
+.safety-ask { font-size: 1.1rem; line-height: 1.5; }
+.safety-move { background: rgba(255, 170, 0, 0.18); color: #ffc75a; padding: 1px 6px; border-radius: 4px; }
+.safety-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.safety-buttons button { padding: 14px; font-size: 1.05rem; }
+.safety-summary { display: flex; flex-direction: column; gap: 10px; }
+.safety-summary h3 { font-size: 1.3rem; margin: 0; }
+kbd { font: inherit; font-size: 0.7rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: rgba(0, 0, 0, 0.25); margin-left: 6px; opacity: 0.8; }
+@media (hover: none) { kbd { display: none; } } /* no keyboard hints on touch screens */
+
+/* ── Clock and tilt coach ── */
+.meter { display: flex; flex-direction: column; gap: 5px; }
+.meter b { font-variant-numeric: tabular-nums; }
+.meter-bar { position: relative; height: 8px; border-radius: 4px; background: var(--panel-3); }
+.meter-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--muted); }
+.meter.ok .meter-bar > span { background: var(--green); }
+.meter.off .meter-bar > span { background: var(--orange); }
+.meter-bar > i { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: #fff; border-radius: 1px; }
+.clock-games { position: relative; display: flex; align-items: flex-end; gap: 3px; height: 64px; border-bottom: 1px solid var(--line); margin-top: 4px; }
+.clock-games .cg { flex: 1; max-width: 28px; border-radius: 3px 3px 0 0; min-height: 3px; }
+.cg.win, .cg-key.win { background: var(--green); }
+.cg.loss, .cg-key.loss { background: var(--red); }
+.cg.draw, .cg-key.draw { background: #8b8987; }
+.clock-games .goal-line { position: absolute; left: 0; right: 0; border-top: 2px dashed rgba(255, 255, 255, 0.55); }
+.clock-legend { display: flex; gap: 12px; flex-wrap: wrap; }
+.clock-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.cg-key { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.dash-key::before { content: ''; width: 14px; border-top: 2px dashed rgba(255, 255, 255, 0.55); display: inline-block; margin-right: 5px; vertical-align: middle; }
+.clock-advice { margin: 0; }
+.nudge.tilt { border-color: #4a6a8a; background: #23303b; }
+.clock-line { background: var(--bg-deep); border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; color: var(--text-2); line-height: 1.5; }
+.clock-line.warn { background: #3a2f1f; color: #ffd8a0; }
+.clock-line.warn b { color: #ffe7c2; }

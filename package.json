@@ -22,7 +22,14 @@
     "test:account": "node tests/account.mjs",
     "test:account-api": "node --experimental-strip-types --no-warnings tests/account-api.ts",
     "test:offline": "node tests/offline.mjs",
-    "puzzles:export": "node --experimental-strip-types --no-warnings scripts/puzzles/export-static.ts public/puzzles"
+    "puzzles:export": "node --experimental-strip-types --no-warnings scripts/puzzles/export-static.ts public/puzzles",
+    "test:board": "node tests/board.mjs",
+    "test:moments": "node --experimental-strip-types --no-warnings tests/keyMoments.mjs",
+    "test:quick": "node tests/quickReview.mjs",
+    "test:safety": "node --experimental-strip-types --no-warnings tests/safety.mjs",
+    "test:safe-drill": "node --experimental-strip-types --no-warnings tests/safetyDrill.mjs",
+    "test:clock": "node --experimental-strip-types --no-warnings tests/clockStats.mjs",
+    "test:coach": "node tests/coach.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

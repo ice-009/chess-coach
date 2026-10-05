@@ -8,6 +8,7 @@ import { bookLookup } from '../lib/openingIndex';
 import { winPct } from '../lib/analysis';
 import { navigate } from '../lib/router';
 import { Board } from '../components/Board';
+import type { Promotion } from '../components/Board';
 import { EvalBar } from '../components/EvalBar';
 import { MasterExplorer } from '../components/MasterExplorer';
 import { fetchStatus } from '../lib/masterDb';
@@ -126,7 +127,7 @@ export function ExplorePage({ initialFen }: { initialFen?: string }) {
         <div>
           <div className="board-wrap">
             <EvalBar whitePct={top ? whitePct : null} label={top ? formatScore(top.cp, top.mate) : undefined} flipped={flip} />
-            <Board id="explore-board" fen={fen} orientation={flip ? 'black' : 'white'} onMove={(f: Square, t: Square) => play(f, t)} squares={squares} arrows={arrows} />
+            <Board id="explore-board" fen={fen} orientation={flip ? 'black' : 'white'} onMove={(f: Square, t: Square, p?: Promotion) => play(f, t, p)} squares={squares} arrows={arrows} />
           </div>
           <div className="nav">
             <button onClick={() => setIdx(0)} aria-label="Start">⏮</button>

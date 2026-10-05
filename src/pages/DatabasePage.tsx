@@ -5,6 +5,7 @@ import { ON_DEVICE, explore, fetchStatus, startBuild } from '../lib/masterDb';
 import type { DbStatus } from '../lib/masterDb';
 import { navigate } from '../lib/router';
 import { Board } from '../components/Board';
+import type { Promotion } from '../components/Board';
 import { MasterExplorer } from '../components/MasterExplorer';
 import { DeviceDatabase } from '../components/DeviceDatabase';
 import { DbGamesSearch } from './DbGamesSearch';
@@ -114,10 +115,10 @@ function DbExplorer({ initialLine }: { initialLine?: string }) {
   );
 
   const onMove = useCallback(
-    (from: Square, to: Square) => {
+    (from: Square, to: Square, promotion: Promotion = 'q') => {
       const c = new Chess(fen);
       try {
-        return play(c.move({ from, to, promotion: 'q' }).san);
+        return play(c.move({ from, to, promotion }).san);
       } catch {
         return false;
       }

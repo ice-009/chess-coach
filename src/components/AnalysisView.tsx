@@ -8,9 +8,14 @@ import { coachFacts, coachReport, explainMove } from '../lib/coach';
 import { formatScore } from '../lib/chess';
 import { getEngine } from '../lib/engine';
 import { THEME_LABEL, explainChoice } from '../lib/moveReasons';
+import { TYPE_LABEL, keyMoments } from '../lib/keyMoments';
+import type { KeyMoment } from '../lib/keyMoments';
+import { recordQuickReview } from '../lib/quickReviews';
 import type { MoveWhy, Reason } from '../lib/moveReasons';
 import { navigate } from '../lib/router';
 import { Board } from './Board';
+import { Captured } from './Captured';
+import type { Promotion } from './Board';
 import { ClassIcon } from './icons';
 import { EvalBar } from './EvalBar';
 import { CoachPanel } from './CoachPanel';
@@ -38,7 +43,7 @@ interface Props {
   extraAction?: { label: string; onClick: (ply: number) => void };
 }
 
-type Tab = 'report' | 'moves' | 'coach';
+type Tab = 'quick' | 'report' | 'moves' | 'coach';
 
 const NO_ARROWS: string[] = [];
 const NO_SQUARES: Record<string, string> = {};
@@ -144,6 +149,9 @@ function Summary({
   verdict,
   onStart,
   onCoach,
+  moments,
+  onQuick,
+  clockLine,
 }: {
   analysis: GameAnalysis;
   parsed: ParsedGame;
@@ -152,6 +160,9 @@ function Summary({
   verdict?: string;
   onStart: () => void;
   onCoach: () => void;
+  moments?: KeyMoment[] | null; // your key moments (your own games, once the deep analysis is done)
+  onQuick?: () => void;
+  clockLine?: { used: number; base: number; fast: number; moves: number } | null;
 }) {
   const counts = useMemo(() => {
     const out: Record<'w' | 'b', Partial<Record<Classification, number>>> = { w: {}, b: {} };
@@ -206,7 +217,23 @@ function Summary({
           </div>
         ))}
       </div>
-      <button className="btn-green big" onClick={onStart}>Start Review</button>
+      {clockLine && (
+        <div className={`clock-line ${clockLine.fast / clockLine.moves >= 0.2 || clockLine.used / clockLine.base < 0.6 ? 'warn' : ''}`}>
+          ⏱ You used <b>{(clockLine.used / 60).toFixed(1)} of {Math.round(clockLine.base / 60)} min</b> · <b>{clockLine.fast} of {clockLine.moves}</b> moves in under 5 seconds
+        </div>
+      )}
+      {moments && moments.length > 0 && onQuick ? (
+        <>
+          <button className="btn-green big quick-start" onClick={onQuick}>⚡ Quick review: {moments.length} key moment{moments.length > 1 ? 's' : ''}</button>
+          <div className="muted small center">The moves that decided this game, as puzzles. About {moments.length * 2} minutes.</div>
+          <button className="btn-secondary wide" onClick={onStart}>Full review (every move)</button>
+        </>
+      ) : (
+        <>
+          {moments && moments.length === 0 && <div className="note">🎉 No big mistakes in this game. Step through it to see your best moves.</div>}
+          <button className="btn-green big" onClick={onStart}>Start Review</button>
+        </>
+      )}
     </div>
   );
 }
@@ -401,12 +428,114 @@ function RetryCard({
   );
 }
 
-function PlayerBar({ p, color, clock, active }: { p: PlayerInfo; color: 'w' | 'b'; clock?: number | null; active: boolean }) {
+const moveLabel = (ply: number, san: string) => `${Math.floor(ply / 2) + 1}${ply % 2 ? '…' : '.'} ${san}`;
+
+/** One key moment: find a better move yourself, then see what happened, why, and the habit to take away. */
+function QuickCard({
+  moment,
+  index,
+  total,
+  retry,
+  revealed,
+  found,
+  best,
+  onShowMe,
+  onLine,
+  onNext,
+}: {
+  moment: KeyMoment;
+  index: number;
+  total: number;
+  retry: RetryState | null;
+  revealed: boolean;
+  found: boolean;
+  best: MoveWhy | null;
+  onShowMe: () => void;
+  onLine: (which: 'game' | 'better') => void;
+  onNext: () => void;
+}) {
+  const m = moment;
+  return (
+    <div className="quick-card" data-moment={index}>
+      <div className="quick-progress" aria-label={`Moment ${index + 1} of ${total}`}>
+        {Array.from({ length: total }, (_, i) => <span key={i} className={i < index ? 'done' : i === index ? 'on' : ''} />)}
+        <span className="muted small">Moment {index + 1} of {total}</span>
+      </div>
+      <h3 className={`quick-title ${m.kind}`}>{m.kind === 'missed-win' ? '💡' : '⚠️'} {m.title}</h3>
+      <p className="quick-context">
+        On move {Math.floor(m.ply / 2) + 1} you played <b>{m.played.san}</b>
+        {m.spent !== null && <> after <b className={m.spent < 10 ? 'quick-fast' : ''}>{m.spent} second{m.spent === 1 ? '' : 's'}</b></>}. Your winning chances went from <b>{m.winBefore}%</b> to <b>{m.winAfter}%</b>.
+      </p>
+      {!revealed ? (
+        <>
+          <div className={`quick-task ${retry?.status ?? 'try'}`}>
+            {(!retry || retry.status === 'try') && <><b>Find a better move.</b> Check the checks, captures and threats for both sides, then move a piece on the board.</>}
+            {retry?.status === 'checking' && <><span className="spinner tiny" /> Checking {retry.tried}…</>}
+            {retry?.status === 'wrong' && <><b>✗ {retry.tried} isn’t better.</b> {retry.tried === m.played.san ? 'That’s the move from the game. ' : ''}Try again{retry.tries >= 2 ? ', or see the answer.' : '.'}</>}
+          </div>
+          <div className="row">
+            <button className={retry && retry.tries >= 2 ? 'btn-green' : 'btn-secondary'} onClick={onShowMe}>Show me</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={`quick-result ${found ? 'good' : 'bad'}`}>
+            {found ? <b>✓ You found it{retry?.tried ? `: ${retry.tried}` : ''}!</b> : <b>The better move was {m.best?.san ?? '—'}.</b>}
+            <span className="chip-label">{TYPE_LABEL[m.type]}</span>
+          </div>
+          <p className="quick-explain">{m.explain}</p>
+          {best && best.reasons.length > 0 && (
+            <div className="quick-why">
+              <div className="eyebrow">Why {best.san} works</div>
+              <ReasonList reasons={best.reasons} />
+            </div>
+          )}
+          {m.spent !== null && m.spent < 10 && <div className="quick-time">⏱ Only {m.spent}s on the move that decided the game. This is exactly the moment to slow down.</div>}
+          <div className="quick-rule"><span>📌</span><div><b>Your rule</b><div>{m.rule}</div></div></div>
+          <div className="why-actions">
+            <button className="chip" onClick={() => onLine('game')}>▶ What happened in the game</button>
+            {m.best && <button className="chip" onClick={() => onLine('better')}>▶ The better line</button>}
+          </div>
+          <button className="btn-green wide" onClick={onNext}>{index + 1 < total ? 'Next moment →' : 'Finish →'}</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** The end of a quick review: what you found and the rules from this game. */
+function QuickSummary({ moments, results, onAgain, onFull, onJump }: { moments: KeyMoment[]; results: ('found' | 'missed')[]; onAgain: () => void; onFull: () => void; onJump: (i: number) => void }) {
+  const found = results.filter((r) => r === 'found').length;
+  const rules = [...new Set(moments.map((m) => m.rule))];
+  return (
+    <div className="quick-card quick-summary">
+      <h3>{found === moments.length ? '🏆' : '✓'} Quick review done</h3>
+      <p className="muted">You found {found} of {moments.length} better move{moments.length > 1 ? 's' : ''} yourself.</p>
+      <ul className="quick-list">
+        {moments.map((m, i) => (
+          <li key={m.ply} className={results[i] === 'found' ? 'ok' : 'bad'}>
+            <button className="link" onClick={() => onJump(i)}>{results[i] === 'found' ? '✓' : '✗'} {moveLabel(m.ply, m.played.san)}</button>
+            <span className="muted small"> · {TYPE_LABEL[m.type]}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="eyebrow">Your rules from this game</div>
+      <ul className="quick-rules">{rules.map((r) => <li key={r}>{r}</li>)}</ul>
+      <div className="row">
+        <button className="btn-secondary" onClick={onAgain}>Go through again</button>
+        <button className="btn-secondary" onClick={onFull}>Full review</button>
+      </div>
+    </div>
+  );
+}
+
+function PlayerBar({ p, color, clock, active, fen }: { p: PlayerInfo; color: 'w' | 'b'; clock?: number | null; active: boolean; fen: string }) {
   return (
     <div className="player-bar">
       <span className={`avatar ${color === 'w' ? 'white' : 'black'}`}>{p.name[0]?.toUpperCase()}</span>
       <span className="player-name">{p.name}</span>
       {p.rating ? <span className="player-rating">({p.rating})</span> : null}
+      <Captured fen={fen} side={color} />
       {clock != null && <span className={`clock ${color === 'w' ? 'white' : 'black'} ${active ? 'active' : ''}`}>{formatClock(clock)}</span>}
     </div>
   );
@@ -501,6 +630,9 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
 
   const done = stage === 'done';
   const report = useMemo(() => (analysis && done ? coachReport(parsed, analysis, perspective, result) : null), [analysis, done, parsed, perspective, result]);
+  // Quick Review: the moments that decided your game (your own games only, after the deep analysis)
+  const moments = useMemo(() => (analysis && done && showCoach ? keyMoments(parsed, analysis, perspective) : null), [analysis, done, showCoach, parsed, perspective]);
+  const [quick, setQuick] = useState<{ idx: number; revealed: boolean; results: ('found' | 'missed')[]; saved: boolean }>({ idx: 0, revealed: false, results: [], saved: false });
   const medians = useMemo(() => {
     const spent = timeSpent(parsed);
     const med = (c: 'w' | 'b') => {
@@ -561,14 +693,52 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
     return m ? { [m.from]: 'rgba(92,139,176,0.6)', [m.to]: 'rgba(92,139,176,0.6)' } : {};
   }, [line]);
 
+  const startMoment = useCallback(
+    (idx: number) => {
+      if (!moments) return;
+      setTab('quick');
+      setQuick((q) => ({ ...q, idx, revealed: false }));
+      setLine(null);
+      if (idx >= moments.length) {
+        setRetry(null);
+        return;
+      }
+      const m = moments[idx];
+      setPly(m.ply); // the position before your move
+      setRetry({ i: m.ply, fen: parsed.fens[m.ply], status: 'try', tries: 0 });
+      showBoard();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [moments, parsed],
+  );
+  const revealMoment = useCallback((result: 'found' | 'missed') => {
+    setQuick((q) => {
+      if (q.revealed) return q;
+      const results = [...q.results];
+      results[q.idx] = result;
+      return { ...q, revealed: true, results };
+    });
+  }, []);
+  // finding a good move yourself reveals the explanation
+  useEffect(() => {
+    if (tab !== 'quick' || !moments || quick.revealed || !retry) return;
+    if (retry.i === moments[quick.idx]?.ply && (retry.status === 'right' || retry.status === 'alt')) revealMoment('found');
+  }, [tab, moments, quick.revealed, quick.idx, retry, revealMoment]);
+  // the end of a quick review is remembered (the dashboard shows your most common mistake)
+  useEffect(() => {
+    if (!moments?.length || quick.idx < moments.length || quick.saved) return;
+    recordQuickReview(cacheKey, moments, quick.results.filter((r) => r === 'found').length);
+    setQuick((q) => ({ ...q, saved: true }));
+  }, [moments, quick, cacheKey]);
+
   const onRetryMove = useCallback(
-    (from: Square, to: Square): boolean => {
+    (from: Square, to: Square, promotion: Promotion = 'q'): boolean => {
       if (!retry || !analysis) return false;
       const i = retry.i;
       const c = new Chess(parsed.fens[i]);
       let m;
       try {
-        m = c.move({ from, to, promotion: 'q' });
+        m = c.move({ from, to, promotion });
       } catch {
         return false;
       }
@@ -606,10 +776,18 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
     return parsed.timeControl?.base ?? null;
   };
   const toMove = parsed.fens[ply].split(' ')[1] as 'w' | 'b';
+  const boardFen = retry ? retry.fen : line ? line.fens[line.idx] : parsed.fens[ply];
   const top = perspective === 'w' ? { p: black, c: 'b' as const } : { p: white, c: 'w' as const };
   const bottom = perspective === 'w' ? { p: white, c: 'w' as const } : { p: black, c: 'b' as const };
 
   const spentHere = useMemo(() => (ply > 0 ? timeSpent(parsed)[ply - 1] : null), [parsed, ply]);
+  // your clock in this game: time used and moves made in under 5 seconds
+  const myClock = useMemo(() => {
+    if (!parsed.timeControl || !parsed.clocks) return null;
+    const mine = timeSpent(parsed).filter((t, i): t is number => t !== null && parsed.moves[i].color === perspective);
+    if (!mine.length) return null;
+    return { used: mine.reduce((a, b) => a + b, 0), base: parsed.timeControl.base, fast: mine.filter((t) => t < 5).length, moves: mine.length };
+  }, [parsed, perspective]);
   const explanation = useMemo(() => {
     if (!analysis || !review || ply === 0 || !lastMove) return null;
     const c = review.classification;
@@ -673,17 +851,17 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
         <div className="board-area" ref={boardRef}>
           <EvalBar whitePct={whitePctOf(barEval)} label={evalText(barEval)} flipped={perspective === 'b'} />
           <div className="board-col">
-            <PlayerBar p={top.p} color={top.c} clock={clockFor(top.c)} active={toMove === top.c && ply < last} />
+            <PlayerBar p={top.p} color={top.c} clock={clockFor(top.c)} active={toMove === top.c && ply < last} fen={boardFen} />
             <Board
               id="analysis-board"
-              fen={retry ? retry.fen : line ? line.fens[line.idx] : parsed.fens[ply]}
+              fen={boardFen}
               orientation={perspective === 'b' ? 'black' : 'white'}
               arrows={retry || line ? NO_ARROWS : arrows}
               squares={retry ? NO_SQUARES : line ? lineSquares : squares}
               badge={retry || line ? undefined : badge}
               onMove={retry && (retry.status === 'try' || retry.status === 'wrong') ? onRetryMove : undefined}
             />
-            <PlayerBar p={bottom.p} color={bottom.c} clock={clockFor(bottom.c)} active={toMove === bottom.c && ply < last} />
+            <PlayerBar p={bottom.p} color={bottom.c} clock={clockFor(bottom.c)} active={toMove === bottom.c && ply < last} fen={boardFen} />
           </div>
         </div>
 
@@ -702,6 +880,9 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
             </span>
           </header>
           <div className="seg-tabs">
+            {showCoach && moments && moments.length > 0 && (
+              <button className={tab === 'quick' ? 'on' : ''} onClick={() => (tab === 'quick' ? undefined : startMoment(Math.min(quick.idx, moments.length)))}>⚡ Quick</button>
+            )}
             <button className={tab === 'report' ? 'on' : ''} onClick={() => setTab('report')}>Report</button>
             <button className={tab === 'moves' ? 'on' : ''} onClick={() => setTab('moves')}>Moves</button>
             {showCoach && <button className={tab === 'coach' ? 'on' : ''} onClick={() => setTab('coach')}>Coach</button>}
@@ -734,7 +915,51 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
                 verdict={showCoach ? report?.verdict : undefined}
                 onStart={() => goto(1)}
                 onCoach={() => setTab('coach')}
+                moments={showCoach ? moments : undefined}
+                onQuick={() => startMoment(0)}
+                clockLine={showCoach ? myClock : null}
               />
+            )}
+
+            {tab === 'quick' && analysis && moments && moments.length > 0 && (
+              <>
+                {line && <LineCard line={line} onStep={stepLine} onClose={() => setLine(null)} />}
+                {quick.idx < moments.length ? (
+                  <QuickCard
+                    moment={moments[quick.idx]}
+                    index={quick.idx}
+                    total={moments.length}
+                    retry={retry}
+                    revealed={quick.revealed}
+                    found={quick.results[quick.idx] === 'found'}
+                    best={explainChoice(parsed, analysis, moments[quick.idx].ply).best}
+                    onShowMe={() => {
+                      revealMoment('missed');
+                      const m = moments[quick.idx];
+                      openLine(m.ply, analysis.evals[m.ply].pv ?? (m.best ? [m.best.uci] : []), 'The better move');
+                      showBoard();
+                    }}
+                    onLine={(which) => {
+                      const m = moments[quick.idx];
+                      if (which === 'game') openLine(m.ply, [m.played.uci, ...(analysis.evals[m.ply + 1]?.pv ?? [])], 'What happened in the game');
+                      else openLine(m.ply, analysis.evals[m.ply].pv ?? (m.best ? [m.best.uci] : []), 'The better line');
+                      showBoard();
+                    }}
+                    onNext={() => startMoment(quick.idx + 1)}
+                  />
+                ) : (
+                  <QuickSummary
+                    moments={moments}
+                    results={quick.results}
+                    onAgain={() => {
+                      setQuick({ idx: 0, revealed: false, results: [], saved: true });
+                      startMoment(0);
+                    }}
+                    onFull={() => goto(1)}
+                    onJump={(i) => goto(moments[i].ply + 1)}
+                  />
+                )}
+              </>
             )}
 
             {tab === 'moves' && (

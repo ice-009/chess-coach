@@ -40,6 +40,8 @@ export const KEYS = {
   visionBest: 'cca-vision-best',
   drillsDone: 'cca-drills-done',
   openingQuiz: 'cca-opening-quiz', // lineId → { w, b }: last quiz result as each colour
+  quickReviews: 'cca-quick-reviews', // game → what Quick Review found (src/lib/quickReviews.ts)
+  safety: 'cca-safety', // "Is it safe?" drill: best streak, totals, missed positions
 };
 
 export function getMe(): string {

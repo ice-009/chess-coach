@@ -1,7 +1,7 @@
 // What you trained each day, for the daily plan and the streak.
 import { KEYS, load, save } from './storage';
 
-export type ActivityKind = 'puzzle' | 'puzzleSolved' | 'review' | 'lesson' | 'drill' | 'game' | 'vision' | 'opening';
+export type ActivityKind = 'puzzle' | 'puzzleSolved' | 'review' | 'lesson' | 'drill' | 'game' | 'vision' | 'opening' | 'safety';
 type Day = Partial<Record<ActivityKind, number>>;
 
 export const today = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

@@ -32,6 +32,7 @@ const PAGES = [
   ['train', '.puzzle-board .board-box', true],
   ['train/endgames', '.puzzle-board .board-box', true],
   ['train/mates', '.puzzle-board .board-box', true],
+  ['train/safe', '.safety .board-box', true],
   ['practice', '.level-card', false],
   ['practice/drills', '.card', false],
   ['practice/drill/two-bishops', '.puzzle-board .board-box', true],

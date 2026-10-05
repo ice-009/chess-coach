@@ -80,3 +80,33 @@ export function formatScore(cp: number | null, mate: number | null): string {
   const v = (cp ?? 0) / 100;
   return `${v >= 0 ? '+' : ''}${v.toFixed(2)}`;
 }
+
+const START_COUNT: Record<string, number> = { p: 8, n: 2, b: 2, r: 2, q: 1 };
+const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+
+/**
+ * What each side has captured (the opponent's missing pieces, most valuable first) and the material balance
+ * from White's side. Promotions are counted the way chess.com shows them: an extra queen offsets a missing pawn.
+ */
+export function material(fen: string): { captured: Record<'w' | 'b', string[]>; diff: number } {
+  const count: Record<'w' | 'b', Record<string, number>> = { w: { p: 0, n: 0, b: 0, r: 0, q: 0 }, b: { p: 0, n: 0, b: 0, r: 0, q: 0 } };
+  for (const ch of fen.split(' ')[0]) {
+    const t = ch.toLowerCase();
+    if (t in START_COUNT) count[ch === t ? 'b' : 'w'][t]++;
+  }
+  const captured: Record<'w' | 'b', string[]> = { w: [], b: [] };
+  let score = { w: 0, b: 0 };
+  for (const side of ['w', 'b'] as const) {
+    const have = { ...count[side] };
+    // a promoted piece stands in for one of the missing pawns
+    for (const t of ['q', 'r', 'b', 'n']) {
+      const extra = Math.max(0, have[t] - START_COUNT[t]);
+      have[t] -= extra;
+      have.p += extra;
+    }
+    const other = side === 'w' ? 'b' : 'w';
+    for (const t of ['q', 'r', 'b', 'n', 'p']) for (let i = have[t]; i < START_COUNT[t]; i++) captured[other].push(t);
+    score = { ...score, [side]: Object.entries(count[side]).reduce((a, [t, n]) => a + PIECE_VALUE[t] * n, 0) };
+  }
+  return { captured, diff: score.w - score.b };
+}

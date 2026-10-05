@@ -5,6 +5,8 @@ import type { Square } from 'chess.js';
 import type { Puzzle } from '../lib/puzzles';
 import { useFitTop } from '../lib/useFitTop';
 import { Board } from './Board';
+import { playSound } from '../lib/sound';
+import type { Promotion } from './Board';
 
 export interface PuzzleResult {
   solved: boolean; // solved with no wrong move, hint or peek
@@ -61,18 +63,19 @@ export function PuzzlePlayer({ puzzle, onDone, showRating = true, compact, failF
     return () => clearTimeout(t);
   }, [puzzle]);
 
-  function onMove(from: Square, to: Square): boolean {
+  function onMove(from: Square, to: Square, promotion: Promotion = 'q'): boolean {
     if (status !== 'solving' && status !== 'wrong') return false;
     const expected = puzzle.moves[ply];
     const c = new Chess(fen);
     let m;
     try {
-      m = c.move({ from, to, promotion: expected && expected.slice(0, 4) === from + to && expected[4] ? expected[4] : 'q' });
+      m = c.move({ from, to, promotion });
     } catch {
       return false;
     }
     const correct = uciOf(m) === expected || c.isCheckmate(); // any mate is accepted, like Lichess
     if (!correct) {
+      playSound('wrong');
       failed.current = true;
       setAssisted(true);
       setStatus(failFast ? 'shown' : 'wrong');
@@ -84,6 +87,7 @@ export function PuzzlePlayer({ puzzle, onDone, showRating = true, compact, failF
     const nextPly = ply + 1;
     setPly(nextPly);
     if (nextPly >= puzzle.moves.length || c.isCheckmate()) {
+      window.setTimeout(() => playSound('correct'), 200); // after the move's own sound
       setStatus('solved');
       finish(true);
       return true;

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { navigate } from '../lib/router';
 import { STATIC_HOST } from '../lib/host';
 import { useAccount } from '../lib/account';
+import { playSound, setSoundOn, useSoundOn } from '../lib/sound';
 import { NavIcons } from './icons';
 
 const TABS = [
@@ -38,6 +39,20 @@ export function Nav({ active }: { active: string }) {
     </a>
   );
   const account = useAccount();
+  const sound = useSoundOn();
+  const soundToggle = (where: string) => (
+    <button
+      className={`side-link sound-toggle ${where}`}
+      aria-pressed={sound}
+      onClick={() => {
+        setSoundOn(!sound);
+        if (!sound) playSound('move'); // a sample, so you hear it's on
+      }}
+    >
+      <span className="side-icon">{sound ? NavIcons.soundOn : NavIcons.soundOff}</span>
+      <span className="side-label">{sound ? 'Sound on' : 'Sound off'}</span>
+    </button>
+  );
   const activeIsSecondary = active === 'account' || TABS.some((t) => !t.primary && t.id === active);
   // your account: at the foot of the sidebar, and in the "More" sheet on phones
   const accountLink = (where: string) => (
@@ -70,12 +85,14 @@ export function Nav({ active }: { active: string }) {
             <span className="side-label">More</span>
           </button>
         </nav>
+        {soundToggle('in-rail')}
         {accountLink('in-rail')}
       </aside>
       {more && (
         <div className="more-sheet" onClick={() => setMore(false)}>
           <div className="more-panel" onClick={(e) => e.stopPropagation()}>
             {TABS.filter((t) => !t.primary).map(link)}
+            {soundToggle('in-sheet')}
             {accountLink('in-sheet')}
           </div>
         </div>

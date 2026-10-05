@@ -39,6 +39,17 @@ const MERGE: Record<string, (a: Entry, b: Entry) => unknown> = {
     const seen = new Set<string>();
     return [...(a.v as ById[]), ...(b.v as ById[])].filter((p) => !seen.has(p.id) && !!seen.add(p.id)).sort((x, y) => y.date - x.date).slice(0, 800);
   },
+  // one entry per reviewed game / drill position: keep both devices' entries, the newer one when both have it
+  [KEYS.quickReviews]: (a, b) => {
+    const out = { ...(b.v as Rec<{ date: number }>) };
+    for (const [k, v] of Object.entries(a.v as Rec<{ date: number }>)) if (!out[k] || v.date >= out[k].date) out[k] = v;
+    return out;
+  },
+  // "Is it safe?" totals: the copy with more answers, and the best streak from either
+  [KEYS.safety]: (a, b) => {
+    const [x, y] = [a.v as { total: number; best: number }, b.v as { total: number; best: number }];
+    return { ...(y.total > x.total ? y : x), best: Math.max(x.best ?? 0, y.best ?? 0) };
+  },
   [KEYS.accuracy]: (a, b) => Object.fromEntries(Object.entries({ ...(b.v as Rec<unknown>), ...(a.v as Rec<unknown>) }).slice(-2000)),
   // a rating can't be added up: keep the copy with more puzzles played
   [KEYS.puzzleRating]: (a, b) => {

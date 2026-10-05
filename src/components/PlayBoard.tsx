@@ -5,7 +5,11 @@ import type { Square } from 'chess.js';
 import { botMove, hintMove } from '../lib/bot';
 import type { Level } from '../lib/bot';
 import { useFitTop } from '../lib/useFitTop';
+import { getMe } from '../lib/storage';
 import { Board } from './Board';
+import { Captured } from './Captured';
+import { playSound } from '../lib/sound';
+import type { Promotion } from './Board';
 
 export interface Goal {
   type: 'mate' | 'promote' | 'draw' | 'capture'; // capture: win every enemy piece and pawn (e.g. queen vs pawn)
@@ -147,9 +151,9 @@ export function PlayBoard({ startFen, userColor, level, goal, onFinish, children
     return () => c.abort();
   }, [fen, result, turn, userColor, level, apply]);
 
-  const onMove = (from: Square, to: Square) => {
+  const onMove = (from: Square, to: Square, promotion: Promotion = 'q') => {
     if (result || turn !== userColor || thinking) return false;
-    return !!apply({ from, to, promotion: 'q' });
+    return !!apply({ from, to, promotion });
   };
 
   function takeback() {
@@ -176,11 +180,25 @@ export function PlayBoard({ startFen, userColor, level, goal, onFinish, children
   }, [lastMove]);
   const arrows = useMemo(() => (hint ? [[hint, 'rgba(129,182,76,0.9)'] as [string, string]] : []), [hint]);
   const inCheck = new Chess(fen).inCheck();
+  const botColor = userColor === 'w' ? 'b' : 'w';
 
   return (
-    <div className="puzzle-play" ref={fitRef}>
+    <div className="puzzle-play with-bars" ref={fitRef}>
       <div className="puzzle-board">
+        {/* player bars like chess.com: the computer above the board, you below, with what each has captured */}
+        <div className="player-bar play-bar" data-side="bot">
+          <span className={`avatar ${botColor === 'w' ? 'white' : 'black'}`}>🤖</span>
+          <span className="player-name">{level.name}</span>
+          <span className="player-rating muted small">computer</span>
+          <Captured fen={fen} side={botColor} />
+          {thinking && !result && <span className="thinking" aria-label="thinking"><i /><i /><i /></span>}
+        </div>
         <Board id="play-board" fen={fen} orientation={userColor === 'w' ? 'white' : 'black'} onMove={result ? undefined : onMove} squares={squares} arrows={arrows} maxWidth={600} />
+        <div className="player-bar play-bar" data-side="you">
+          <span className={`avatar ${userColor === 'w' ? 'white' : 'black'}`}>{(getMe() || 'You')[0].toUpperCase()}</span>
+          <span className="player-name">You</span>
+          <Captured fen={fen} side={userColor} />
+        </div>
       </div>
       <div className="puzzle-side panel">
         <div className={`puzzle-status ${result ? (result.success === false || result.outcome === 'loss' ? 'wrong' : 'solved') : ''}`}>
@@ -211,7 +229,7 @@ export function PlayBoard({ startFen, userColor, level, goal, onFinish, children
           <div className="row">
             <button className="btn-secondary" disabled={turn !== userColor || thinking} onClick={() => hintMove(fen).then((m) => setHint(m))}>💡 Hint</button>
             <button className="btn-secondary" onClick={takeback} disabled={sans.length === 0}>↶ Take back</button>
-            <button className="btn-secondary" onClick={() => finish({ outcome: 'loss', success: goal ? false : undefined, reason: 'You resigned.' }, sans, fens)}>Resign</button>
+            <button className="btn-secondary" onClick={() => { playSound('end'); finish({ outcome: 'loss', success: goal ? false : undefined, reason: 'You resigned.' }, sans, fens); }}>Resign</button>
           </div>
         )}
         <div className="book play-moves">

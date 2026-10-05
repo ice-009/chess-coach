@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
 import { Board } from '../components/Board';
+import type { Promotion } from '../components/Board';
 import { logActivity } from '../lib/activity';
 import { consistent, defaultMode, loadResults, ownColor, quizLines, quizScope, saveResult, sessionOrder } from '../lib/openingQuiz';
 import type { Color, QuizLine, QuizMode } from '../lib/openingQuiz';
 import { navigate } from '../lib/router';
+import { playSound } from '../lib/sound';
 import { useFitTop } from '../lib/useFitTop';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -51,11 +53,11 @@ function QuizRound({ line, color, lines, onDone }: { line: QuizLine; color: Colo
   }, [done, target, color, misses, onDone]);
 
   const onMove = useCallback(
-    (from: Square, to: Square): boolean => {
+    (from: Square, to: Square, promotion: Promotion = 'q'): boolean => {
       if (!myTurn) return false;
       let m;
       try {
-        m = new Chess(fen).move({ from, to, promotion: 'q' });
+        m = new Chess(fen).move({ from, to, promotion });
       } catch {
         return false;
       }
@@ -72,6 +74,7 @@ function QuizRound({ line, color, lines, onDone }: { line: QuizLine; color: Colo
         return true;
       }
       const expected = target.moves[ply];
+      playSound('wrong');
       if (wrong === 0) setMisses((ms) => [...ms, { label: label(ply, expected.san), comment: expected.comment }]);
       setWrong(wrong + 1);
       setFeedback(wrong === 0 ? 'Not the book move here. Think about the plan of this opening and try again.' : `The book move is ${expected.san}. Play it to continue.`);

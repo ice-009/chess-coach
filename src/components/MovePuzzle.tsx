@@ -3,6 +3,8 @@ import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
 import { sideToMove } from '../lib/chess';
 import { Board } from './Board';
+import type { Promotion } from './Board';
+import { playSound } from '../lib/sound';
 import { Markdown } from './Markdown';
 
 interface Props {
@@ -38,24 +40,26 @@ export function MovePuzzle({ id, fen, solutions, prompt, explain, onDone }: Prop
     return null;
   })();
 
-  function onMove(from: Square, to: Square): boolean {
+  function onMove(from: Square, to: Square, promotion: Promotion = 'q'): boolean {
     if (state === 'solved' || state === 'revealed') return false;
     const c = new Chess(fen);
     let m;
     try {
-      m = c.move({ from, to, promotion: 'q' });
+      m = c.move({ from, to, promotion });
     } catch {
       return false;
     }
     const ok = solutions.some((s) => strip(s) === strip(m.san) || s === m.from + m.to + (m.promotion ?? ''));
     setTries((t) => t + 1);
     if (ok) {
+      window.setTimeout(() => playSound('correct'), 200);
       setPosition(c.fen());
       setLast([from, to]);
       setState('solved');
       onDone?.(tries === 0);
       return true;
     }
+    playSound('wrong');
     setWrongSan(m.san);
     setState('wrong');
     return false;

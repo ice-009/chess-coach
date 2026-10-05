@@ -8,6 +8,7 @@ import { MovePuzzle } from '../components/MovePuzzle';
 import { CLASS_META } from '../lib/classMeta';
 import { sectionFen } from './LearnPage';
 import { PuzzleRush, PuzzleSetup, RatedTraining, ReviewQueue, usePuzzleStatus } from './PuzzleModes';
+import { SafetyDrill } from './SafetyDrill';
 import { ENDGAME_THEMES, MATE_THEMES, dueReviews } from '../lib/puzzles';
 
 type Solved = Record<string, boolean>; // puzzle id → solved on first try
@@ -143,6 +144,7 @@ function LessonExercises() {
 
 const TABS = [
   { id: '', label: 'Rated puzzles' },
+  { id: 'safe', label: 'Is it safe?' },
   { id: 'endgames', label: 'Endgames' },
   { id: 'mates', label: 'Checkmates' },
   { id: 'rush', label: 'Puzzle Rush' },
@@ -155,7 +157,7 @@ const TABS = [
 export function TrainPage({ tab = '', arg }: { tab?: string; arg?: string }) {
   const { status, refresh } = usePuzzleStatus();
   const due = dueReviews().length;
-  const needsDb = ['', 'theme', 'endgames', 'mates', 'rush', 'review'].includes(tab);
+  const needsDb = ['', 'theme', 'endgames', 'mates', 'rush', 'review', 'safe'].includes(tab);
   const active = tab === 'theme' ? '' : tab;
   return (
     <div>
@@ -193,6 +195,8 @@ export function TrainPage({ tab = '', arg }: { tab?: string; arg?: string }) {
           base="train/mates"
           footer={<p className="muted small">The basic mates with a lone king (queen, rook, two bishops, bishop and knight) are in <a href="#/practice/drills">Practice → Endgame drills</a>.</p>}
         />
+      ) : tab === 'safe' ? (
+        <SafetyDrill />
       ) : tab === 'rush' ? (
         <PuzzleRush />
       ) : tab === 'review' ? (
