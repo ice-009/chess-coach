@@ -50,6 +50,15 @@ const MERGE: Record<string, (a: Entry, b: Entry) => unknown> = {
     const [x, y] = [a.v as { total: number; best: number }, b.v as { total: number; best: number }];
     return { ...(y.total > x.total ? y : x), best: Math.max(x.best ?? 0, y.best ?? 0) };
   },
+  // the review deck: every card from both devices; for a card on both, the one reviewed more recently
+  [KEYS.deck]: (a, b) => {
+    const out = { ...(b.v as Rec<{ last: number; added: number }>) };
+    for (const [id, c] of Object.entries(a.v as Rec<{ last: number; added: number }>)) {
+      const o = out[id];
+      if (!o || c.last > o.last || (c.last === o.last && c.added >= o.added)) out[id] = c;
+    }
+    return out;
+  },
   [KEYS.accuracy]: (a, b) => Object.fromEntries(Object.entries({ ...(b.v as Rec<unknown>), ...(a.v as Rec<unknown>) }).slice(-2000)),
   // a rating can't be added up: keep the copy with more puzzles played
   [KEYS.puzzleRating]: (a, b) => {

@@ -13,7 +13,7 @@ interface Props {
   solutions: string[]; // SAN or UCI moves that count as correct
   prompt?: string;
   explain?: string;
-  onDone?: (firstTry: boolean) => void;
+  onDone?: (firstTry: boolean, revealed?: boolean) => void; // revealed: the answer was shown, not found
 }
 
 const strip = (san: string) => san.replace(/[+#!?]/g, '');
@@ -67,7 +67,7 @@ export function MovePuzzle({ id, fen, solutions, prompt, explain, onDone }: Prop
 
   function reveal() {
     setState('revealed');
-    onDone?.(false);
+    onDone?.(false, true);
   }
 
   const squares: Record<string, string> = last ? { [last[0]]: 'rgba(74,222,128,0.45)', [last[1]]: 'rgba(74,222,128,0.45)' } : {};

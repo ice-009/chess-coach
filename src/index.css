@@ -1203,3 +1203,27 @@ kbd { font: inherit; font-size: 0.7rem; font-weight: 800; padding: 1px 5px; bord
 .clock-line { background: var(--bg-deep); border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; color: var(--text-2); line-height: 1.5; }
 .clock-line.warn { background: #3a2f1f; color: #ffd8a0; }
 .clock-line.warn b { color: #ffe7c2; }
+
+/* ── Daily review (the FSRS deck) ── */
+.deck-review { display: flex; flex-direction: column; gap: 12px; }
+.deck-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.deck-progress { display: flex; align-items: center; gap: 6px; min-width: 160px; }
+.deck-progress .progress { flex: 1; min-width: 80px; margin-left: 6px; }
+.deck-kind { font-size: 0.78rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; background: var(--panel-2); color: var(--text); }
+.deck-kind.k-mistake { background: #3a2624; color: #ffcfc8; }
+.deck-kind.k-safety { background: #3a3220; color: #ffe2a8; }
+.deck-kind.k-opening { background: #23303b; color: #cfe3f5; }
+.deck-kind.k-lesson { background: #2f3a26; color: #dff0c9; }
+.deck-mix { margin-left: auto; }
+.deck-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-radius: 10px; padding: 12px 14px; position: sticky; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 5; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+.deck-result.good { background: #2f3a26; }
+.deck-result.bad { background: #3a2624; }
+.deck-done { max-width: 640px; }
+.deck-done h2 { margin: 0; }
+.deck-how { background: var(--bg-deep); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+
+/* find a better move / judge a move: board left, panel right (stacked on narrow screens) */
+.find-move { display: grid; grid-template-columns: minmax(0, min(560px, max(340px, calc(100dvh - var(--fit-top, 260px) - 40px)))) minmax(260px, 1fr); gap: 18px; align-items: start; }
+.find-side { display: flex; flex-direction: column; gap: 12px; background: var(--panel); border-radius: var(--radius); padding: 16px; }
+@media (max-width: 880px) { .find-move { grid-template-columns: 1fr; } .find-board .board-box { margin-inline: auto; } }
+@media (max-width: 760px) { .deck-result { bottom: calc(66px + env(safe-area-inset-bottom)); } }

@@ -8,6 +8,7 @@ import { fetchPuzzle, getRating } from '../lib/puzzles';
 import { afterMove, explainSafe, explainUnsafe, sanOf, temptingMoves, verdictOf } from '../lib/safety';
 import { KEYS, load, save } from '../lib/storage';
 import { playSound } from '../lib/sound';
+import { AGAIN, addCard } from '../lib/deck';
 import { useFitTop } from '../lib/useFitTop';
 
 const ROUND = 10;
@@ -155,6 +156,8 @@ export function SafetyDrill() {
       save(KEYS.safety, st);
       logActivity('safety');
       setRound((r) => [...r, { q, right }]);
+      // a miss joins your review deck: it comes back in a few minutes and again tomorrow
+      if (!right) addCard({ kind: 'safety', ref: `${q.fen.split(' ').slice(0, 2).join('_')}|${q.uci}`, title: `Is ${q.san} safe?`, data: { fen: q.fen, uci: q.uci, verdict: q.verdict, reply: q.reply ?? undefined, explain: q.explain, source: q.source } }, AGAIN);
       // play it out: the move, then (if it wasn't safe) the answer that punishes it
       const after = afterMove(q.fen, q.uci);
       timers.current.push(window.setTimeout(() => setShownFen(after), 450));

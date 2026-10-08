@@ -110,3 +110,8 @@ export function material(fen: string): { captured: Record<'w' | 'b', string[]>; 
   }
   return { captured, diff: score.w - score.b };
 }
+
+/** The position of a lesson board or exercise: a FEN, or the position after `setup` (SAN moves from the start). */
+export function sectionFen(s: { fen?: string; setup?: string }): string {
+  return s.setup ? parseLine(s.setup).at(-1)!.fenAfter : new Chess(s.fen).fen();
+}

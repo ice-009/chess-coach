@@ -18,6 +18,7 @@ import { Captured } from './Captured';
 import type { Promotion } from './Board';
 import { ClassIcon } from './icons';
 import { EvalBar } from './EvalBar';
+import { AGAIN, GOOD, addCard } from '../lib/deck';
 import { CoachPanel } from './CoachPanel';
 
 export interface PlayerInfo {
@@ -712,13 +713,22 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
     [moments, parsed],
   );
   const revealMoment = useCallback((result: 'found' | 'missed') => {
+    // the moment joins your review deck (missed ones come back first)
+    const m = moments?.[quick.idx];
+    if (m?.best && !quick.revealed) {
+      const opponent = perspective === 'w' ? black.name : white.name;
+      addCard(
+        { kind: 'mistake', ref: `${cacheKey}#${m.ply}`, title: `Your game vs ${opponent}`, data: { fen: parsed.fens[m.ply], uci: m.played.uci, best: m.best.uci, explain: m.explain, source: `From your game vs ${opponent}, move ${Math.floor(m.ply / 2) + 1}` } },
+        result === 'found' ? GOOD : AGAIN,
+      );
+    }
     setQuick((q) => {
       if (q.revealed) return q;
       const results = [...q.results];
       results[q.idx] = result;
       return { ...q, revealed: true, results };
     });
-  }, []);
+  }, [moments, quick.idx, quick.revealed, perspective, white.name, black.name, cacheKey, parsed]);
   // finding a good move yourself reveals the explanation
   useEffect(() => {
     if (tab !== 'quick' || !moments || quick.revealed || !retry) return;

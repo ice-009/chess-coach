@@ -1,5 +1,6 @@
 // Puzzle trainer state: the puzzle API, your puzzle rating, and spaced-repetition review of misses.
 import { KEYS, load, save } from './storage';
+import { AGAIN, GOOD, addCard, dueCards, gradeCard, loadDeck } from './deck';
 import { STATIC_HOST } from './host';
 
 export interface Puzzle {
@@ -129,30 +130,18 @@ export function updateRating(puzzleRating: number, solved: boolean): { before: n
   return { before: s.rating, after };
 }
 
-// ── Spaced repetition: a missed puzzle comes back after 1, 3, 7 and 21 days until solved cleanly ──
-const INTERVALS = [1, 3, 7, 21];
-type ReviewItem = { box: number; due: number };
-
+// ── Spaced repetition: a puzzle you miss goes into your review deck (src/lib/deck.ts, scheduled by FSRS) ──
 export function scheduleReview(id: string, solved: boolean, fromReview: boolean) {
-  const all = load<Record<string, ReviewItem>>(KEYS.puzzleReview, {});
-  const cur = all[id];
-  if (!solved) all[id] = { box: 0, due: Date.now() + INTERVALS[0] * 86400_000 };
-  else if (cur && fromReview) {
-    const box = cur.box + 1;
-    if (box >= INTERVALS.length) delete all[id]; // learned
-    else all[id] = { box, due: Date.now() + INTERVALS[box] * 86400_000 };
+  if (fromReview) {
+    if (!gradeCard(`puzzle:${id}`, solved ? GOOD : AGAIN) && !solved) addCard({ kind: 'puzzle', ref: id, title: 'A puzzle you missed' }, AGAIN);
+    return;
   }
-  save(KEYS.puzzleReview, all);
+  if (!solved) addCard({ kind: 'puzzle', ref: id, title: 'A puzzle you missed' }, AGAIN);
 }
 
-export function dueReviews(now = Date.now()): string[] {
-  const all = load<Record<string, ReviewItem>>(KEYS.puzzleReview, {});
-  return Object.entries(all)
-    .filter(([, v]) => v.due <= now)
-    .sort((a, b) => a[1].due - b[1].due)
-    .map(([id]) => id);
-}
-export const reviewCount = () => Object.keys(load<Record<string, ReviewItem>>(KEYS.puzzleReview, {})).length;
+/** Puzzle cards due now (the deck also holds other kinds: see dueCards). */
+export const dueReviews = (now = Date.now()): string[] => dueCards(now).filter((c) => c.kind === 'puzzle').map((c) => c.ref);
+export const reviewCount = () => Object.values(loadDeck()).filter((c) => c.kind === 'puzzle').length;
 
 // ── Themes: friendly names, with the ones that matter most below 1500 first ──
 export const THEMES: { key: string; label: string; tip: string }[] = [

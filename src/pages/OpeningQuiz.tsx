@@ -8,6 +8,7 @@ import { consistent, defaultMode, loadResults, ownColor, quizLines, quizScope, s
 import type { Color, QuizLine, QuizMode } from '../lib/openingQuiz';
 import { navigate } from '../lib/router';
 import { playSound } from '../lib/sound';
+import { AGAIN, GOOD, HARD, addCard } from '../lib/deck';
 import { useFitTop } from '../lib/useFitTop';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -19,14 +20,14 @@ interface Miss {
   comment?: string;
 }
 
-interface RoundResult {
+export interface RoundResult {
   line: QuizLine;
   color: Color;
   misses: Miss[];
 }
 
 /** One line: the computer plays its side's book moves, you play yours from memory. */
-function QuizRound({ line, color, lines, onDone }: { line: QuizLine; color: Color; lines: QuizLine[]; onDone: (r: RoundResult) => void }) {
+export function QuizRound({ line, color, lines, onDone }: { line: QuizLine; color: Color; lines: QuizLine[]; onDone: (r: RoundResult) => void }) {
   const fitRef = useFitTop<HTMLDivElement>();
   const [target, setTarget] = useState(line); // may switch when you choose another book move at a branch
   const [played, setPlayed] = useState<string[]>([]); // UCI
@@ -167,6 +168,8 @@ export function OpeningQuiz({ scope, color: colorParam }: { scope: string; color
 
   const onDone = useCallback((r: RoundResult) => {
     saveResult(r.line.id, r.color, r.misses.length);
+    // every quizzed line joins your review deck, so your openings stay fresh
+    addCard({ kind: 'opening', ref: `${r.line.id}|${r.color}`, title: `${r.line.opening.name}: ${r.line.name}` }, r.misses.length === 0 ? GOOD : r.misses.length === 1 ? HARD : AGAIN);
     logActivity('opening');
     setResults((rs) => [...rs, r]);
   }, []);

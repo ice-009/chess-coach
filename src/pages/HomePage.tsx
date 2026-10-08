@@ -13,7 +13,8 @@ import type { Profile } from '../lib/chesscom';
 import { gameRows, openingStats, overview, recommendations, scorePct } from '../lib/insights';
 import type { GameRow } from '../lib/insights';
 import { loadResults, ownColor, quizLines, quizScope } from '../lib/openingQuiz';
-import { dueReviews, getRating } from '../lib/puzzles';
+import { getRating } from '../lib/puzzles';
+import { dueCount } from '../lib/deck';
 import { navigate } from '../lib/router';
 import { KEYS, getMe, load, save } from '../lib/storage';
 import { STATIC_HOST } from '../lib/host';
@@ -316,7 +317,7 @@ export function HomePage() {
 
   // ── progress on this device ──
   const day = activityOn(today());
-  const due = dueReviews().length;
+  const due = dueCount();
   const lessons = load<string[]>(KEYS.lessonsDone, []);
   const drills = load<Record<string, number>>(KEYS.drillsDone, {});
   const puzzle = getRating();
@@ -346,12 +347,12 @@ export function HomePage() {
   // ── today's plan and the one thing to do next ──
   const latestUnreviewedLoss = rows.find((r) => r.outcome === 'loss' && !acc[r.game.url]);
   const plan = [
+    // your review deck: what's due comes first, because remembering what you've learned beats new material
+    ...(due > 0 || (day.review ?? 0) > 0
+      ? [{ label: due ? `Daily review (${due} due)` : 'Daily review done', short: `Daily review: ${due} card${due > 1 ? 's' : ''}`, why: 'Positions you missed and things you learned come back just before you’d forget them.', done: due === 0, href: '#/train/review' }]
+      : []),
     { label: `Solve 10 puzzles (${Math.min(10, day.puzzle ?? 0)}/10)`, short: 'Solve 10 puzzles', why: 'Daily tactics are the fastest way to stop missing threats.', done: (day.puzzle ?? 0) >= 10, href: '#/train' },
     { label: `10 “Is it safe?” checks (${Math.min(10, day.safety ?? 0)}/10)`, short: 'Do 10 “Is it safe?” checks', why: 'The few seconds’ check before every move keeps your pieces on the board.', done: (day.safety ?? 0) >= 10, href: '#/train/safe' },
-    // missed puzzles that are due again (or, once cleared today, a done item; nothing to show before that)
-    ...(due > 0 || (day.review ?? 0) > 0
-      ? [{ label: due ? `Clear your review queue (${due} due)` : 'Review queue cleared', short: `Review ${due} missed puzzle${due > 1 ? 's' : ''}`, why: 'Puzzles you missed come back until you solve them cleanly.', done: due === 0, href: '#/train/review' }]
-      : []),
     { label: 'One lesson, endgame drill or opening line', short: 'One lesson, drill or opening line', why: 'A little theory every day adds up.', done: (day.lesson ?? 0) + (day.drill ?? 0) + (day.opening ?? 0) > 0, href: '#/learn' },
     {
       label: 'Play a game, then review it',
@@ -398,7 +399,7 @@ export function HomePage() {
     const weak = scorePct(byColor.white) < scorePct(byColor.black) ? 'White' : 'Black';
     focus.push({ icon: '⚖️', title: `Shore up your ${weak} games`, why: `You score ${scorePct(byColor.white)}% as White and ${scorePct(byColor.black)}% as Black.`, href: '#/openings', action: `${weak} openings` });
   }
-  if (due > 0) focus.push({ icon: '🔁', title: `${due} puzzle${due > 1 ? 's' : ''} due for review`, why: 'You missed these before. Solve them cleanly to lock the pattern in.', href: '#/train/review', action: 'Review now' });
+  if (due > 0) focus.push({ icon: '🔁', title: `${due} card${due > 1 ? 's' : ''} due in your daily review`, why: 'Recalling what you learned just before you’d forget it is what makes it stick.', href: '#/train/review', action: 'Review now' });
   if (nextStep) focus.push({ icon: '🧭', title: 'Next on your road to 1500', why: nextStep.label, href: nextStep.href, action: 'Start' });
 
   // ── skills ──

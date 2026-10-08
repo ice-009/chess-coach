@@ -29,7 +29,9 @@
     "test:safety": "node --experimental-strip-types --no-warnings tests/safety.mjs",
     "test:safe-drill": "node --experimental-strip-types --no-warnings tests/safetyDrill.mjs",
     "test:clock": "node --experimental-strip-types --no-warnings tests/clockStats.mjs",
-    "test:coach": "node tests/coach.mjs"
+    "test:coach": "node tests/coach.mjs",
+    "test:fsrs": "node --experimental-strip-types --no-warnings tests/fsrs.mjs",
+    "test:deck": "node --experimental-strip-types --no-warnings tests/deck.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
@@ -47,6 +49,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
     "playwright-core": "1.63",
+    "ts-fsrs": "^5.4.2",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   }

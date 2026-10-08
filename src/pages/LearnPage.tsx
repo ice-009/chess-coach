@@ -1,18 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Chess } from 'chess.js';
 import { ALL_LESSONS, CHAPTERS, findLesson } from '../data/lessons';
 import type { Section } from '../data/lessons';
-import { parseLine } from '../lib/chess';
 import { navigate } from '../lib/router';
 import { KEYS, load, save } from '../lib/storage';
 import { logActivity } from '../lib/activity';
 import { Board } from '../components/Board';
 import { Markdown } from '../components/Markdown';
+import { sectionFen } from '../lib/chess';
+import { AGAIN, GOOD, HARD, addCard } from '../lib/deck';
 import { MovePuzzle } from '../components/MovePuzzle';
 
-export function sectionFen(s: { fen?: string; setup?: string }): string {
-  return s.setup ? parseLine(s.setup).at(-1)!.fenAfter : new Chess(s.fen).fen();
-}
+export { sectionFen };
 
 export function useLessonsDone() {
   const [done, setDone] = useState<string[]>(() => load(KEYS.lessonsDone, []));
@@ -40,7 +38,19 @@ function SectionView({ s, id }: { s: Section; id: string }) {
   return (
     <div className="exercise">
       <div className="exercise-tag">Your turn</div>
-      <MovePuzzle id={id} fen={fen} solutions={s.solutions} prompt={s.prompt} explain={s.explain} />
+      <MovePuzzle
+        id={id}
+        fen={fen}
+        solutions={s.solutions}
+        prompt={s.prompt}
+        explain={s.explain}
+        onDone={(firstTry, revealed) => {
+          // the exercise joins your review deck: it comes back before you'd forget it
+          const cut = id.lastIndexOf('-');
+          const lessonId = id.slice(0, cut);
+          addCard({ kind: 'lesson', ref: `${lessonId}#${id.slice(cut + 1)}`, title: findLesson(lessonId)?.lesson.title ?? 'Lesson exercise' }, revealed ? AGAIN : firstTry ? GOOD : HARD);
+        }}
+      />
     </div>
   );
 }

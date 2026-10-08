@@ -3,13 +3,10 @@ import type { ReactNode } from 'react';
 import {
   THEMES,
   buildPuzzles,
-  dueReviews,
   fetchPuzzle,
-  fetchPuzzleById,
   getRating,
   markSeen,
   puzzleStatus,
-  reviewCount,
   scheduleReview,
   themeInfo,
   themeLabel,
@@ -287,59 +284,3 @@ export function PuzzleRush() {
   );
 }
 
-/** Spaced repetition: puzzles you missed come back after 1, 3, 7 and 21 days. */
-export function ReviewQueue() {
-  const [queue, setQueue] = useState(() => dueReviews());
-  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
-  const [done, setDone] = useState<{ solved: boolean } | null>(null);
-  const [cleared, setCleared] = useState(0);
-
-  useEffect(() => {
-    setDone(null);
-    if (!queue.length) return setPuzzle(null);
-    fetchPuzzleById(queue[0]).then(setPuzzle, () => setQueue((q) => q.slice(1)));
-  }, [queue]);
-
-  if (!queue.length)
-    return (
-      <div className="empty">
-        <p><b>{cleared ? `Done! You cleared ${cleared} review puzzle${cleared > 1 ? 's' : ''}.` : 'Nothing to review right now.'}</b></p>
-        <p className="muted">
-          Every puzzle you miss comes back after 1 day, then 3, 7 and 21 days, until you solve it cleanly each time. This is how patterns stick.
-          {reviewCount() > 0 && ` ${reviewCount()} puzzle${reviewCount() > 1 ? 's are' : ' is'} in your review cycle.`}
-        </p>
-      </div>
-    );
-
-  return (
-    <div>
-      <p className="muted small">{queue.length} puzzle{queue.length > 1 ? 's' : ''} due for review</p>
-      {puzzle && (
-        <PuzzlePlayer
-          key={puzzle.id}
-          puzzle={puzzle}
-          onDone={({ solved }) => {
-            scheduleReview(puzzle.id, solved, true);
-            logActivity('review');
-            setDone({ solved });
-          }}
-        >
-          {done && (
-            <>
-              <p className={done.solved ? 'good' : 'warn'}>{done.solved ? 'Nice, it will come back later to make sure it sticks.' : 'It comes back tomorrow.'}</p>
-              <button
-                className="btn-green wide"
-                onClick={() => {
-                  setCleared((c) => c + 1);
-                  setQueue((q) => q.slice(1));
-                }}
-              >
-                Next →
-              </button>
-            </>
-          )}
-        </PuzzlePlayer>
-      )}
-    </div>
-  );
-}

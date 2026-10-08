@@ -42,6 +42,7 @@ export const KEYS = {
   openingQuiz: 'cca-opening-quiz', // lineId → { w, b }: last quiz result as each colour
   quickReviews: 'cca-quick-reviews', // game → what Quick Review found (src/lib/quickReviews.ts)
   safety: 'cca-safety', // "Is it safe?" drill: best streak, totals, missed positions
+  deck: 'cca-deck', // the review deck: every card and its FSRS memory state (src/lib/deck.ts)
 };
 
 export function getMe(): string {

@@ -7,9 +7,11 @@ import { KEYS, getMe, load, save } from '../lib/storage';
 import { MovePuzzle } from '../components/MovePuzzle';
 import { CLASS_META } from '../lib/classMeta';
 import { sectionFen } from './LearnPage';
-import { PuzzleRush, PuzzleSetup, RatedTraining, ReviewQueue, usePuzzleStatus } from './PuzzleModes';
+import { PuzzleRush, PuzzleSetup, RatedTraining, usePuzzleStatus } from './PuzzleModes';
 import { SafetyDrill } from './SafetyDrill';
-import { ENDGAME_THEMES, MATE_THEMES, dueReviews } from '../lib/puzzles';
+import { AGAIN, GOOD, addCard, dueCount } from '../lib/deck';
+import { DeckReview } from './DeckReview';
+import { ENDGAME_THEMES, MATE_THEMES } from '../lib/puzzles';
 
 type Solved = Record<string, boolean>; // puzzle id → solved on first try
 
@@ -40,6 +42,12 @@ function MyMistakes() {
 
   function done(firstTry: boolean) {
     if (!puzzle) return;
+    try {
+      const played = new Chess(puzzle.fen).move(puzzle.playedSan);
+      addCard({ kind: 'mistake', ref: puzzle.id, title: `Your game, move ${puzzle.moveNo}`, data: { fen: puzzle.fen, uci: played.from + played.to + (played.promotion ?? ''), best: puzzle.best, source: `From your game, move ${puzzle.moveNo}` } }, firstTry ? GOOD : AGAIN);
+    } catch {
+      // a position that no longer parses: skip the deck
+    }
     const next = { ...solved, [puzzle.id]: firstTry || !!solved[puzzle.id] };
     save(KEYS.puzzlesSolved, next);
     setSolved(next);
@@ -148,7 +156,7 @@ const TABS = [
   { id: 'endgames', label: 'Endgames' },
   { id: 'mates', label: 'Checkmates' },
   { id: 'rush', label: 'Puzzle Rush' },
-  { id: 'review', label: 'Review' },
+  { id: 'review', label: 'Daily review' },
   { id: 'mistakes', label: 'My mistakes' },
   { id: 'daily', label: 'Daily' },
   { id: 'lessons', label: 'Lesson exercises' },
@@ -156,7 +164,7 @@ const TABS = [
 
 export function TrainPage({ tab = '', arg }: { tab?: string; arg?: string }) {
   const { status, refresh } = usePuzzleStatus();
-  const due = dueReviews().length;
+  const due = dueCount();
   const needsDb = ['', 'theme', 'endgames', 'mates', 'rush', 'review', 'safe'].includes(tab);
   const active = tab === 'theme' ? '' : tab;
   return (
@@ -200,7 +208,7 @@ export function TrainPage({ tab = '', arg }: { tab?: string; arg?: string }) {
       ) : tab === 'rush' ? (
         <PuzzleRush />
       ) : tab === 'review' ? (
-        <ReviewQueue />
+        <DeckReview />
       ) : tab === 'daily' ? (
         <DailyPuzzle />
       ) : tab === 'lessons' ? (
