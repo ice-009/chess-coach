@@ -38,6 +38,7 @@ const BOARD = { borderRadius: 'inherit' };
 const LIFTED = { transform: 'scale(1.18) translateY(-6%)', filter: 'drop-shadow(0 14px 10px rgba(0,0,0,0.45))', cursor: 'grabbing' };
 const GHOST = { opacity: 0.28 };
 const LAST_MOVE = 'var(--b-last)';
+const LAST_FROM = 'var(--b-last-from)';
 const SELECTED = 'var(--b-sel)';
 const DOT = 'var(--b-dot)';
 const RING = 'var(--b-ring)';
@@ -45,6 +46,28 @@ const CHECK = 'var(--b-check)';
 // pages mark the last move with chess.com's flat yellow: shown in the theme's own last-move colour instead
 const themed = (bg: string) => (/^rgba\((255, ?255, ?51|250, ?204, ?21),/.test(bg) ? LAST_MOVE : bg);
 const REDUCED_MOTION = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// solid-looking pieces: the library's piece drawings filled with ivory and ebony gradients and lit by a bevel
+// filter (CSS in "Board skin"). The gradients and the filter are defined once for the whole page.
+const PIECE_DEFS = `<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" focusable="false"><defs>
+<linearGradient id="cca-pw" x1="0.1" y1="0" x2="0.45" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.4" stop-color="#f4ecd8"/><stop offset="1" stop-color="#b09d74"/></linearGradient>
+<linearGradient id="cca-pb" x1="0.1" y1="0" x2="0.45" y2="1"><stop offset="0" stop-color="#8a90a6"/><stop offset="0.3" stop-color="#3a3f50"/><stop offset="1" stop-color="#0a0b10"/></linearGradient>
+<filter id="cca-bevel" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+<feGaussianBlur in="SourceAlpha" stdDeviation="1.6" result="b"/>
+<feSpecularLighting in="b" surfaceScale="5" specularConstant="1" specularExponent="18" lighting-color="#ffffff" result="s"><feDistantLight azimuth="235" elevation="42"/></feSpecularLighting>
+<feComposite in="s" in2="SourceAlpha" operator="in" result="si"/>
+<feComposite in="SourceGraphic" in2="si" operator="arithmetic" k2="1" k3="0.7"/>
+</filter></defs></svg>`;
+if (typeof document !== 'undefined' && !document.getElementById('cca-piece-defs')) {
+  const holder = document.createElement('div');
+  holder.id = 'cca-piece-defs';
+  holder.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+  holder.innerHTML = PIECE_DEFS;
+  document.body.appendChild(holder);
+}
+const PIECES = Object.fromEntries(
+  Object.entries(defaultPieces).map(([code, draw]) => [code, (props?: Parameters<typeof draw>[0]) => draw({ ...props, fill: code[0] === 'w' ? 'url(#cca-pw)' : 'url(#cca-pb)' })]),
+) as typeof defaultPieces;
 
 const placement = (fen: string) => fen.split(' ').slice(0, 2).join(' ');
 const safeChess = (fen: string) => {
@@ -125,8 +148,14 @@ export const Board = memo(function Board({ id, fen, orientation = 'white', arrow
   const squaresKey = JSON.stringify(squares);
   const squareStyles = useMemo(() => {
     const out: Record<string, CSSProperties> = {};
-    if (lastMove) out[lastMove.from] = out[lastMove.to] = { background: LAST_MOVE };
-    for (const [sq, bg] of Object.entries(JSON.parse(squaresKey) as Record<string, string>)) out[sq] = { background: themed(bg) };
+    if (lastMove) {
+      out[lastMove.from] = { background: LAST_FROM };
+      out[lastMove.to] = { background: LAST_MOVE };
+    }
+    for (const [sq, bg] of Object.entries(JSON.parse(squaresKey) as Record<string, string>)) {
+      const shade = themed(bg);
+      out[sq] = { background: shade === LAST_MOVE && sq === lastMove?.from ? LAST_FROM : shade };
+    }
     if (checkSquare) out[checkSquare] = { ...out[checkSquare], backgroundImage: CHECK };
     if (selected) out[selected] = { background: SELECTED };
     for (const m of legal) out[m.to] = { ...out[m.to], backgroundImage: m.captured ? RING : DOT };
@@ -137,7 +166,10 @@ export const Board = memo(function Board({ id, fen, orientation = 'white', arrow
   const squareClasses = useMemo(() => {
     const out: Record<string, string> = {};
     const add = (sq: string, c: string) => (out[sq] = (out[sq] ?? 'board-sq') + ' ' + c);
-    if (lastMove) add(lastMove.to, 'is-landed');
+    if (lastMove) {
+      add(lastMove.from, 'is-left');
+      add(lastMove.to, 'is-landed');
+    }
     if (checkSquare) add(checkSquare, 'is-check');
     if (selected) add(selected, 'is-sel');
     for (const m of legal) add(m.to, m.captured ? 'is-capture' : 'is-target');
@@ -193,6 +225,12 @@ export const Board = memo(function Board({ id, fen, orientation = 'white', arrow
     [onMove, onSquare, pending, selected, targets, fen, tryMove],
   );
 
+  // the selected piece, drawn faintly on a legal square while the pointer is over it
+  const selPiece = useMemo(() => {
+    const p = selected ? safeChess(fen)?.get(selected) : null;
+    return p ? `${p.color}${p.type.toUpperCase()}` : null;
+  }, [fen, selected]);
+
   const badgeSquare = badge?.square;
   const badgeClass = badge?.c;
   // a custom square renderer replaces the library's own square, which is what applies squareStyles: apply them here
@@ -200,6 +238,7 @@ export const Board = memo(function Board({ id, fen, orientation = 'white', arrow
     ({ square, children }: { square: string; children?: ReactNode }) => (
       <div className={squareClasses[square] ?? 'board-sq'} style={{ position: 'relative', width: '100%', height: '100%', ...squareStyles[square] }}>
         {children}
+        {selPiece && targets.includes(square as Square) && <span className="board-ghost" aria-hidden="true">{PIECES[selPiece]?.({ svgStyle: { width: '100%', height: '100%' } })}</span>}
         {square === badgeSquare && badgeClass && (
           <span className="board-badge">
             <ClassIcon c={badgeClass} size={26} />
@@ -207,7 +246,7 @@ export const Board = memo(function Board({ id, fen, orientation = 'white', arrow
         )}
       </div>
     ),
-    [badgeSquare, badgeClass, squareStyles, squareClasses],
+    [badgeSquare, badgeClass, squareStyles, squareClasses, selPiece, targets],
   );
 
   const options = useMemo(
@@ -236,6 +275,7 @@ export const Board = memo(function Board({ id, fen, orientation = 'white', arrow
       },
       onSquareClick,
       arrows: boardArrows,
+      pieces: PIECES,
       squareStyles,
       squareRenderer,
       boardStyle: BOARD,
@@ -247,7 +287,7 @@ export const Board = memo(function Board({ id, fen, orientation = 'white', arrow
       dropSquareStyle: DROP,
       draggingPieceStyle: LIFTED,
       draggingPieceGhostStyle: GHOST,
-      animationDurationInMs: 200,
+      animationDurationInMs: 260,
       showAnimations: !REDUCED_MOTION,
       showNotation: !hideCoords,
     }),
@@ -263,9 +303,11 @@ export const Board = memo(function Board({ id, fen, orientation = 'white', arrow
       data-board-theme={theme}
       data-turn={onMove && !pending ? fen.split(' ')[1] : undefined}
     >
-      <Chessboard options={options} />
+      <div className="board-well">
+        <Chessboard options={options} />
+        {pending && <PromotionPicker {...pending} orientation={orientation} onPick={(p) => { setPromo(null); onMove?.(pending.from, pending.to, p); }} onCancel={() => setPromo(null)} />}
+      </div>
       {themePicker && <ThemePicker current={theme} />}
-      {pending && <PromotionPicker {...pending} orientation={orientation} onPick={(p) => { setPromo(null); onMove?.(pending.from, pending.to, p); }} onCancel={() => setPromo(null)} />}
     </div>
   );
 });
@@ -319,7 +361,7 @@ function PromotionPicker({ fen, to, orientation, onPick, onCancel }: { fen: stri
       <div className="promo-column" style={{ left: `${col * 12.5}%`, ...(atTop ? { top: 0 } : { bottom: 0, flexDirection: 'column-reverse' }) }} onClick={(e) => e.stopPropagation()}>
         {order.map((p) => (
           <button key={p} className="promo-piece" data-piece={p} aria-label={{ q: 'Queen', r: 'Rook', b: 'Bishop', n: 'Knight' }[p]} onClick={() => onPick(p)}>
-            {defaultPieces[`${color}${p.toUpperCase()}`]?.({ svgStyle: { width: '100%', height: '100%' } })}
+            {PIECES[`${color}${p.toUpperCase()}`]?.({ svgStyle: { width: '100%', height: '100%' } })}
           </button>
         ))}
         <button className="promo-cancel" aria-label="Cancel" onClick={onCancel}>✕</button>
