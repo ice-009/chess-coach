@@ -14,6 +14,7 @@ import {
 } from '../lib/puzzles';
 import type { Puzzle, PuzzleStatus } from '../lib/puzzles';
 import { logActivity } from '../lib/activity';
+import { countThemeSolve } from '../lib/courses';
 import { KEYS, load, save } from '../lib/storage';
 import { navigate } from '../lib/router';
 import { PuzzlePlayer } from '../components/PuzzlePlayer';
@@ -90,16 +91,17 @@ export function RatedTraining({ theme, chips, base = 'train/theme', footer }: { 
     ({ solved }: { solved: boolean }) => {
       if (!puzzle) return;
       markSeen(puzzle.id);
-      const { before, after } = updateRating(puzzle.rating, solved);
+      const { before, after } = updateRating(puzzle.rating, solved, puzzle.themes);
       scheduleReview(puzzle.id, solved, false);
       logActivity('puzzle');
       if (solved) logActivity('puzzleSolved');
+      if (solved && theme) countThemeSolve(theme);
       setRating(after);
       setResult({ solved, delta: after - before });
       setSession((s) => ({ solved: s.solved + (solved ? 1 : 0), total: s.total + 1, streak: solved ? s.streak + 1 : 0 }));
       if (solved && autoNext) window.setTimeout(next, 1100);
     },
-    [puzzle, autoNext, next],
+    [puzzle, autoNext, next, theme],
   );
 
   return (
@@ -186,38 +188,48 @@ function RatingProgress() {
   );
 }
 
-const RUSH_SECONDS = 180;
+const RUSH_MODES = [
+  { id: '3', label: '3 minutes', seconds: 180, blurb: 'Solve as many as you can in 3 minutes.' },
+  { id: '5', label: '5 minutes', seconds: 300, blurb: 'Five minutes: a little more time to calculate the harder ones.' },
+  { id: 'survival', label: 'Survival', seconds: Infinity, blurb: 'No clock: keep going until your third mistake. Accuracy over speed.' },
+] as const;
+type RushMode = (typeof RUSH_MODES)[number]['id'];
+const RUSH_BESTS = 'cca-rush-bests'; // 5-minute and survival bests (the 3-minute best is KEYS.rushBest)
 
-/** Puzzle Rush: 3 minutes, 3 strikes, puzzles get harder as you go. Trains fast pattern recognition. */
+/** Puzzle Rush: 3 strikes, puzzles get harder as you go, against the clock or in survival mode. Trains fast pattern recognition. */
 export function PuzzleRush() {
+  const [mode, setMode] = useState<RushMode>(() => load<RushMode>('cca-rush-mode', '3'));
+  const RUSH_SECONDS = RUSH_MODES.find((m) => m.id === mode)!.seconds;
   const [phase, setPhase] = useState<'ready' | 'running' | 'over'>('ready');
-  const [left, setLeft] = useState(RUSH_SECONDS);
+  const [left, setLeft] = useState<number>(RUSH_SECONDS);
   const [score, setScore] = useState(0);
   const [strikes, setStrikes] = useState(0);
   const [index, setIndex] = useState(0);
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
-  const [best, setBest] = useState(() => load(KEYS.rushBest, 0));
+  const readBest = (m: RushMode) => (m === '3' ? load(KEYS.rushBest, 0) : (load<Record<string, number>>(RUSH_BESTS, {})[m] ?? 0));
+  const [best, setBest] = useState(() => readBest(mode));
   const startedAt = useRef(0);
 
   const loadPuzzle = useCallback((i: number) => fetchPuzzle(550 + i * 45).then(setPuzzle), []);
 
   useEffect(() => {
-    if (phase !== 'running') return;
+    if (phase !== 'running' || !Number.isFinite(RUSH_SECONDS)) return;
     const t = setInterval(() => {
       const remaining = Math.max(0, RUSH_SECONDS - (Date.now() - startedAt.current) / 1000);
       setLeft(remaining);
       if (remaining <= 0) setPhase('over');
     }, 200);
     return () => clearInterval(t);
-  }, [phase]);
+  }, [phase, RUSH_SECONDS]);
 
   useEffect(() => {
     if (phase !== 'over') return;
     if (score > best) {
-      save(KEYS.rushBest, score);
+      if (mode === '3') save(KEYS.rushBest, score);
+      else save(RUSH_BESTS, { ...load<Record<string, number>>(RUSH_BESTS, {}), [mode]: score });
       setBest(score);
     }
-  }, [phase, score, best]);
+  }, [phase, score, best, mode]);
 
   function start() {
     setScore(0);
@@ -264,10 +276,15 @@ export function PuzzleRush() {
         ) : (
           <>
             <h2>Puzzle Rush</h2>
-            <p className="muted">Solve as many puzzles as you can in 3 minutes. They start easy and get harder. Three mistakes and you’re out.</p>
+            <p className="muted">{RUSH_MODES.find((m) => m.id === mode)!.blurb} Puzzles start easy and get harder. Three mistakes and you’re out.</p>
             {best > 0 && <div>Personal best: <b>{best}</b></div>}
           </>
         )}
+        <div className="seg">
+          {RUSH_MODES.map((m) => (
+            <button key={m.id} className={mode === m.id ? 'on' : ''} onClick={() => { setMode(m.id); save('cca-rush-mode', m.id); setLeft(m.seconds); setBest(readBest(m.id)); }}>{m.label}</button>
+          ))}
+        </div>
         <button className="btn-green big" onClick={start}>{phase === 'over' ? 'Play again' : 'Start'}</button>
       </div>
     );
@@ -275,7 +292,7 @@ export function PuzzleRush() {
   return (
     <div>
       <div className="rush-bar">
-        <span className={`rush-time ${left < 20 ? 'low' : ''}`}>{Math.floor(left / 60)}:{String(Math.floor(left % 60)).padStart(2, '0')}</span>
+        <span className={`rush-time ${left < 20 ? 'low' : ''}`}>{Number.isFinite(left) ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : '∞'}</span>
         <span className="rush-points">✓ {score}</span>
         <span className="rush-strikes">{[0, 1, 2].map((i) => <span key={i} className={i < strikes ? 'x on' : 'x'}>✕</span>)}</span>
       </div>

@@ -33,7 +33,9 @@ const PAGES = [
   ['train/endgames', '.puzzle-board .board-box', true],
   ['train/mates', '.puzzle-board .board-box', true],
   ['train/safe', '.safety .board-box', true],
-  ['practice', '.level-card', false],
+  ['practice', '.bot-card', false],
+  ['courses', '.course-card', false],
+  ['courses/tactics', '.course-path', false],
   ['practice/drills', '.card', false],
   ['practice/drill/two-bishops', '.puzzle-board .board-box', true],
   ['practice/vision', '.vision-board .board-box', true],
@@ -47,7 +49,9 @@ let failures = 0;
 fs.mkdirSync('test-results/layout', { recursive: true });
 for (const d of DEVICES.filter((x) => !ONLY || ONLY.includes(x.name))) {
   // Chromium devices use the installed Google Chrome when Playwright's own Chromium isn't downloaded
-  const browser = d.engine === chromium ? await chromium.launch().catch(() => chromium.launch({ channel: 'chrome' })) : await webkit.launch();
+  // Safari sizes fall back to Chrome when WebKit isn't downloaded (the layout is the same; Safari quirks aren't tested then)
+  const anyChrome = () => chromium.launch().catch(() => chromium.launch({ channel: 'chrome' }));
+  const browser = d.engine === chromium ? await anyChrome() : await webkit.launch().catch(() => (console.log(`(${d.name}: WebKit not installed, using Chrome)`), anyChrome()));
   const page = await (await browser.newContext({ ...d.opts, deviceScaleFactor: 1 })).newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

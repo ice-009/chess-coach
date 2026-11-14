@@ -41,7 +41,7 @@ await step('game review: Stockfish classifies every move', async () => {
   await page.waitForSelector('.stage-bar', { state: 'detached', timeout: 180000 });
   const acc = await page.locator('.acc-box').allInnerTexts();
   await page.locator('.btn-green.big').click();
-  await page.waitForSelector('.why-card, .coach-title');
+  await page.waitForSelector('.why-card, .coach-title, .quick-card'); // games with key moments open in Quick Review
   return `accuracy ${acc.join(' / ')}`;
 });
 

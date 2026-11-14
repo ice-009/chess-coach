@@ -9,6 +9,7 @@ import { formatScore } from '../lib/chess';
 import { getEngine } from '../lib/engine';
 import { THEME_LABEL, explainChoice } from '../lib/moveReasons';
 import { TYPE_LABEL, keyMoments } from '../lib/keyMoments';
+import { PHASES, gamePhaseAccuracy } from '../lib/advancedStats';
 import type { KeyMoment } from '../lib/keyMoments';
 import { recordQuickReview } from '../lib/quickReviews';
 import type { MoveWhy, Reason } from '../lib/moveReasons';
@@ -74,13 +75,13 @@ const EvalGraph = memo(function EvalGraph({ evals, reviews, ply, onSelect }: { e
         onSelect(Math.round(((e.clientX - r.left) / r.width) * (evals.length - 1)));
       }}
     >
-      <rect width={W} height={H} fill="#403e3b" />
+      <rect width={W} height={H} fill="#263247" />
       <path d={d} fill="#ffffff" />
-      <line x1={0} x2={W} y1={H / 2} y2={H / 2} stroke="#8b8987" strokeWidth={1} />
-      <line x1={pts[ply][0]} x2={pts[ply][0]} y1={0} y2={H} stroke="#81b64c" strokeWidth={2.5} />
+      <line x1={0} x2={W} y1={H / 2} y2={H / 2} stroke="#7c879c" strokeWidth={1} />
+      <line x1={pts[ply][0]} x2={pts[ply][0]} y1={0} y2={H} stroke="#58c35c" strokeWidth={2.5} />
       {reviews.map((r, i) =>
         isError(r.classification) || r.classification === 'brilliant' || r.classification === 'great' ? (
-          <circle key={i} cx={pts[i + 1][0]} cy={pts[i + 1][1]} r={4.5} fill={CLASS_META[r.classification].color} stroke="#262421" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+          <circle key={i} cx={pts[i + 1][0]} cy={pts[i + 1][1]} r={4.5} fill={CLASS_META[r.classification].color} stroke="#121a28" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
         ) : null,
       )}
     </svg>
@@ -173,6 +174,7 @@ function Summary({
     });
     return out;
   }, [analysis, parsed]);
+  const phaseAcc = useMemo(() => ({ w: gamePhaseAccuracy(parsed, analysis, 'w'), b: gamePhaseAccuracy(parsed, analysis, 'b') }), [parsed, analysis]);
   const rating = (c: 'w' | 'b', p: PlayerInfo) => {
     const played = analysis.reviews.filter((r, i) => parsed.moves[i].color === c && r.classification !== 'book').length;
     return estimateGameRating(analysis.acpl[c], played, p.rating);
@@ -205,6 +207,21 @@ function Summary({
         </div>
         <div className="rating-box">{rating('w', white)}</div>
         <div className="rating-box">{rating('b', black)}</div>
+      </div>
+      <div className="phase-table">
+        {PHASES.map((p) => (
+          <div className="class-row" key={p}>
+            <span className="class-name">{p === 'opening' ? '📖' : p === 'middlegame' ? '⚔️' : '🏁'} {p[0].toUpperCase() + p.slice(1)}</span>
+            {(['w', 'b'] as const).map((c) => {
+              const v = phaseAcc[c][p];
+              return (
+                <span key={c} className="class-count">
+                  {v === null ? <span className="muted">–</span> : <span className={`phase-pill ${v >= 80 ? 'hi' : v >= 65 ? 'mid' : 'lo'}`}>{v.toFixed(0)}</span>}
+                </span>
+              );
+            })}
+          </div>
+        ))}
       </div>
       <div className="class-table">
         {CLASS_ORDER.map((c) => (
@@ -282,6 +299,7 @@ function WhyCard({
   classification,
   evalBest,
   evalPlayed,
+  side,
   onLine,
   onRetry,
 }: {
@@ -289,6 +307,7 @@ function WhyCard({
   classification: Classification;
   evalBest: string;
   evalPlayed: string;
+  side: string | null; // "White" or "Black" when the move is the opponent's, null for your own moves
   onLine: (pv: string[], title: string) => void;
   onRetry: () => void;
 }) {
@@ -323,15 +342,21 @@ function WhyCard({
       ) : (
         <div className="muted small">
           No quick tactic: it is simply the most precise move. It keeps the position at {evalBest}; after {played.san}
-          {why.reply ? `, your opponent’s best answer is ${why.reply}, and` : ''} the position is {evalPlayed}.
+          {why.reply ? `, ${side ? 'your' : 'your opponent’s'} best answer is ${why.reply}, and` : ''} the position is {evalPlayed}.
         </div>
       )}
       <div className="why-line">
         <span className="muted">Best line:</span> {best.line}
       </div>
+      {error && played.drawbacks.length > 0 && (
+        <div className="why-also">
+          The problem with {played.san}:
+          <ReasonList reasons={played.drawbacks} />
+        </div>
+      )}
       {!error && played.reasons.length > 0 && !['mate', 'material', 'fork'].includes(played.reasons[0].theme) && (
         <div className="why-also">
-          Your move {played.san} is fine too: {played.reasons[0].text.charAt(0).toLowerCase() + played.reasons[0].text.slice(1)}
+          {side ? `${side}’s move` : 'Your move'} {played.san} is fine too: {played.reasons[0].text.charAt(0).toLowerCase() + played.reasons[0].text.slice(1)}
         </div>
       )}
       <div className="why-actions">
@@ -666,7 +691,7 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
   const badge = useMemo(() => (lastMove && review ? { square: lastMove.to, c: review.classification } : undefined), [lastMove, review]);
 
   // best move and the reasons behind it (also why a good move was good)
-  const why = useMemo(() => (analysis && ply > 0 ? explainChoice(parsed, analysis, ply - 1) : null), [analysis, parsed, ply]);
+  const why = useMemo(() => (analysis && ply > 0 ? explainChoice(parsed, analysis, ply - 1, perspective) : null), [analysis, parsed, ply, perspective]);
 
   const openLine = useCallback(
     (base: number, pv: string[], title: string) => {
@@ -1000,6 +1025,7 @@ export function AnalysisView({ cacheKey, parsed, white, black, perspective, resu
                     classification={review.classification}
                     evalBest={evalText(evalBefore)}
                     evalPlayed={evalText(evalHere)}
+                    side={parsed.moves[ply - 1].color === perspective ? null : parsed.moves[ply - 1].color === 'w' ? 'White' : 'Black'}
                     onLine={(pv, title) => {
                       openLine(ply - 1, pv, title);
                       showBoard();

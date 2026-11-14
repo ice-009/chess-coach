@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 import { useRoute } from './lib/router';
 import { Nav } from './components/Nav';
 import { startAccount } from './lib/account';
@@ -16,12 +16,23 @@ const DatabasePage = lazy(() => import('./pages/DatabasePage').then((m) => ({ de
 const InsightsPage = lazy(() => import('./pages/InsightsPage').then((m) => ({ default: m.InsightsPage })));
 const PracticePage = lazy(() => import('./pages/PracticePage').then((m) => ({ default: m.PracticePage })));
 const TrainPage = lazy(() => import('./pages/TrainPage').then((m) => ({ default: m.TrainPage })));
+const CoursesPage = lazy(() => import('./pages/CoursesPage').then((m) => ({ default: m.CoursesPage })));
 const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 const OfflinePage = lazy(() => import('./pages/OfflinePage').then((m) => ({ default: m.OfflinePage })));
 
 export default function App() {
   const { parts, query } = useRoute();
   const [section = '', a, b] = parts;
+  // a new page fades in by CSS when it mounts; moving within a section (a lesson, a course) slides the content in too
+  const mainRef = useRef<HTMLElement>(null);
+  const path = parts.join('/');
+  const prev = useRef({ section, path });
+  useEffect(() => {
+    const was = prev.current;
+    prev.current = { section, path };
+    if (was.section !== section || was.path === path || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    mainRef.current?.firstElementChild?.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'ease-out' });
+  }, [section, path]);
 
   let page;
   switch (section) {
@@ -54,7 +65,10 @@ export default function App() {
       page = <DatabasePage key={`${a ?? ''}/${b ?? ''}`} sub={a} arg={b} query={query} />;
       break;
     case 'practice':
-      page = <PracticePage key={`${a ?? ''}/${b ?? ''}`} sub={a} arg={b} fen={query.get('fen') ?? undefined} color={query.get('color') ?? undefined} />;
+      page = <PracticePage key={`${a ?? ''}/${b ?? ''}/${query.get('bot') ?? ''}`} sub={a} arg={b} fen={query.get('fen') ?? undefined} color={query.get('color') ?? undefined} bot={query.get('bot') ?? undefined} />;
+      break;
+    case 'courses':
+      page = <CoursesPage key={a ?? ''} courseId={a} />;
       break;
     case 'insights':
       page = <InsightsPage />;
@@ -75,7 +89,7 @@ export default function App() {
   return (
     <div className="shell">
       <Nav active={section} />
-      <main className="app">
+      <main className="app" data-section={section} ref={mainRef}>
         <Suspense fallback={<div className="page-loading"><span className="spinner" /></div>}>{page}</Suspense>
       </main>
     </div>

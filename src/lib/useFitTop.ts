@@ -10,18 +10,26 @@ export function useFitTop<T extends HTMLElement>() {
     const el = ref.current;
     if (!el) return;
     let last = '';
+    let frame = 0;
     const update = () => {
+      frame = 0;
       const top = `${Math.round(el.getBoundingClientRect().top + window.scrollY)}px`;
       if (top !== last) el.style.setProperty('--fit-top', (last = top));
     };
+    // resizes are handled on the next frame: setting --fit-top inside the observer callback resizes the body
+    // again in the same frame, which WebKit reports as "ResizeObserver loop completed with undelivered notifications"
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
     update();
     // content above can change height after mount (banners, wrapped chips); the body resizing covers all of it
-    const ro = new ResizeObserver(update);
+    const ro = new ResizeObserver(schedule);
     ro.observe(document.body);
-    window.addEventListener('resize', update);
+    window.addEventListener('resize', schedule);
     return () => {
+      cancelAnimationFrame(frame);
       ro.disconnect();
-      window.removeEventListener('resize', update);
+      window.removeEventListener('resize', schedule);
     };
   }, []);
   return ref;

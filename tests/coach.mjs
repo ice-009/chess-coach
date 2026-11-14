@@ -55,7 +55,7 @@ for (const [name, engine, opts] of [
   ['webkit (iPad)', webkit, { viewport: { width: 1180, height: 820 }, hasTouch: true, serviceWorkers: 'block' }],
 ]) {
   console.log(name);
-  const browser = engine === chromium ? await chromium.launch().catch(() => chromium.launch({ channel: 'chrome' })) : await webkit.launch();
+  const browser = engine === chromium ? await chromium.launch().catch(() => chromium.launch({ channel: 'chrome' })) : await webkit.launch().catch(() => (console.log('(WebKit not installed, using Chrome)'), chromium.launch().catch(() => chromium.launch({ channel: 'chrome' }))));
   const page = await browser.newPage(opts);
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
