@@ -1752,14 +1752,17 @@ input, select { border-color: var(--line); border-radius: 10px; background-color
 /* ── Board skin ── themes are CSS variables on .board-box[data-board-theme] (src/lib/boardTheme.ts); Board.tsx
    paints squares, highlights, dots and rings with them, so a theme never touches the board's logic */
 .board-box, .board-box[data-board-theme='midnight'] {
-  --b-light-c: #c8d2ea; --b-light: linear-gradient(135deg, #d6def1 0%, #bcc7e3 100%);
-  --b-dark-c: #56679a; --b-dark: linear-gradient(135deg, #687ab0 0%, #4e5e91 100%);
-  --b-grid: none;
+  --b-light-c: #c5cfea; --b-light: linear-gradient(135deg, #d9e0f3 0%, #b6c2e2 100%);
+  --b-dark-c: #52639a; --b-dark: linear-gradient(135deg, #6a7cb4 0%, #44548a 100%);
+  --b-grid: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(10, 16, 40, 0.14);
+  --b-frame: linear-gradient(160deg, #3a4670 0%, #1c2440 45%, #10162a 100%);
+  --b-frame-rim: rgba(160, 180, 240, 0.35);
   --b-note-light: #4e5e91; --b-note-dark: #dfe6f6;
-  --b-last: rgba(255, 200, 40, 0.55);
+  --b-last: rgba(255, 196, 46, 0.62);
+  --b-last-from: rgba(255, 196, 46, 0.3);
   --b-sel: rgba(255, 196, 64, 0.62);
-  --b-dot: radial-gradient(circle, rgba(18, 26, 52, 0.34) 19%, transparent 21%);
-  --b-ring: radial-gradient(circle, transparent 72%, rgba(18, 26, 52, 0.32) 74%);
+  --b-dot: radial-gradient(circle, rgba(16, 24, 56, 0.5) 0 15%, rgba(16, 24, 56, 0.16) 16.5% 20%, transparent 21%);
+  --b-ring: radial-gradient(circle, transparent 0 60%, rgba(16, 24, 56, 0.5) 62% 70%, transparent 71.5%);
   --b-check: radial-gradient(circle, rgba(255, 0, 0, 0.9) 0%, rgba(231, 0, 0, 0.6) 30%, rgba(169, 0, 0, 0) 75%);
   --b-check-glow: rgba(255, 64, 96, 0.75);
   --b-drop: rgba(255, 255, 255, 0.7);
@@ -1770,8 +1773,11 @@ input, select { border-color: var(--line); border-radius: 10px; background-color
 .board-box[data-board-theme='classic'] {
   --b-light-c: #ebecd0; --b-light: linear-gradient(135deg, #eff0d8 0%, #e3e5c6 100%);
   --b-dark-c: #739552; --b-dark: linear-gradient(135deg, #7c9e5a 0%, #6a8b4b 100%);
+  --b-frame: linear-gradient(160deg, #5a4630 0%, #3a2c1d 55%, #241a10 100%);
+  --b-frame-rim: rgba(235, 220, 170, 0.3);
   --b-note-light: #739552; --b-note-dark: #ebecd0;
-  --b-last: rgba(255, 255, 51, 0.42);
+  --b-last: rgba(255, 255, 51, 0.5);
+  --b-last-from: rgba(255, 255, 51, 0.26);
   --b-sel: rgba(255, 255, 51, 0.5);
   --b-dot: radial-gradient(circle, rgba(0, 0, 0, 0.16) 19%, transparent 21%);
   --b-ring: radial-gradient(circle, transparent 72%, rgba(0, 0, 0, 0.16) 74%);
@@ -1783,8 +1789,11 @@ input, select { border-color: var(--line); border-radius: 10px; background-color
   --b-light: repeating-linear-gradient(97deg, rgba(120, 70, 20, 0.05) 0 1px, transparent 1px 6px), linear-gradient(160deg, #eed0a2 0%, #dcb27b 100%);
   --b-dark-c: #9a5f37;
   --b-dark: repeating-linear-gradient(97deg, rgba(40, 18, 4, 0.1) 0 1px, transparent 1px 5px), linear-gradient(160deg, #ab6e43 0%, #87512c 100%);
+  --b-frame: repeating-linear-gradient(97deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 7px), linear-gradient(160deg, #6b3d20 0%, #44230f 55%, #2a1407 100%);
+  --b-frame-rim: rgba(255, 210, 150, 0.3);
   --b-note-light: #8a532d; --b-note-dark: #f0d4a8;
-  --b-last: rgba(255, 220, 90, 0.46);
+  --b-last: rgba(255, 220, 90, 0.55);
+  --b-last-from: rgba(255, 220, 90, 0.28);
   --b-sel: rgba(255, 220, 90, 0.58);
   --b-dot: radial-gradient(circle, rgba(60, 28, 6, 0.3) 19%, transparent 21%);
   --b-ring: radial-gradient(circle, transparent 72%, rgba(60, 28, 6, 0.28) 74%);
@@ -1793,8 +1802,11 @@ input, select { border-color: var(--line); border-radius: 10px; background-color
 .board-box[data-board-theme='ice'] {
   --b-light-c: #e6f1f8; --b-light: linear-gradient(135deg, #f3f9fc 0%, #dbeaf4 100%);
   --b-dark-c: #86adc9; --b-dark: linear-gradient(135deg, #97bcd6 0%, #7499b8 100%);
+  --b-frame: linear-gradient(160deg, #e9f3fa 0%, #a9c3d8 50%, #7f9fba 100%);
+  --b-frame-rim: rgba(255, 255, 255, 0.7);
   --b-note-light: #6f94b3; --b-note-dark: #f3f9fc;
-  --b-last: rgba(64, 170, 255, 0.36);
+  --b-last: rgba(64, 170, 255, 0.42);
+  --b-last-from: rgba(64, 170, 255, 0.2);
   --b-sel: rgba(64, 170, 255, 0.5);
   --b-dot: radial-gradient(circle, rgba(20, 60, 100, 0.26) 19%, transparent 21%);
   --b-ring: radial-gradient(circle, transparent 72%, rgba(20, 60, 100, 0.26) 74%);
@@ -1806,8 +1818,11 @@ input, select { border-color: var(--line); border-radius: 10px; background-color
   --b-light-c: #2f3a70; --b-light: linear-gradient(135deg, #36437e 0%, #29336a 100%);
   --b-dark-c: #181e44; --b-dark: linear-gradient(135deg, #1d244f 0%, #141939 100%);
   --b-grid: inset 0 0 0 0.5px rgba(34, 211, 238, 0.14);
+  --b-frame: linear-gradient(160deg, #1f1a4a 0%, #0d0f26 60%, #07081a 100%);
+  --b-frame-rim: rgba(34, 211, 238, 0.55);
   --b-note-light: #67e8f9; --b-note-dark: #f0abfc;
-  --b-last: rgba(244, 114, 182, 0.34);
+  --b-last: rgba(244, 114, 182, 0.42);
+  --b-last-from: rgba(244, 114, 182, 0.18);
   --b-sel: rgba(34, 211, 238, 0.4);
   --b-dot: radial-gradient(circle, rgba(34, 211, 238, 0.7) 15%, rgba(34, 211, 238, 0.18) 21%, transparent 24%);
   --b-ring: radial-gradient(circle, transparent 72%, rgba(34, 211, 238, 0.7) 74%, rgba(34, 211, 238, 0.2) 82%);
@@ -1820,15 +1835,23 @@ input, select { border-color: var(--line); border-radius: 10px; background-color
 
 /* the frame: rounded, a hairline rim, a deep shadow and a soft glow in the section's colour */
 .board-box {
-  position: relative; overflow: hidden; overflow: clip; border-radius: 12px; transform-origin: 50% 100%; /* clip: never a scroll box */
+  position: relative; overflow: hidden; overflow: clip; border-radius: 14px; transform-origin: 50% 100%; /* clip: never a scroll box */
+  padding: clamp(5px, 1.7%, 12px); background: var(--b-frame, #1c2440); box-sizing: border-box;
   box-shadow: 0 0 0 1px rgba(var(--tone-rgb, 88, 195, 92), 0.28), 0 0 0 2px rgba(5, 9, 18, 0.6),
     0 24px 48px -20px rgba(0, 0, 0, 0.9), 0 0 44px -14px var(--b-glow);
   animation: board-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
-/* bevel and inner glow over the squares (never catches clicks) */
+/* the frame's bevel: a lit top edge and a shaded bottom edge (never catches clicks) */
 .board-box::after {
   content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 -2px 0 rgba(0, 0, 0, 0.22), inset 0 0 26px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 0 var(--b-frame-rim, rgba(255, 255, 255, 0.3)), inset 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+}
+/* the squares sit in a well inside the frame: shaded where the frame overhangs, lit from the top left */
+.board-well { position: relative; border-radius: 6px; overflow: hidden; overflow: clip; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 0 1px var(--b-frame-rim, rgba(255, 255, 255, 0.2)); }
+.board-well::after {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit;
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.35), inset 0 0 18px rgba(0, 0, 0, 0.18);
+  background: radial-gradient(120% 90% at 18% 8%, rgba(255, 255, 255, 0.1), transparent 55%), radial-gradient(130% 100% at 85% 100%, rgba(0, 0, 0, 0.14), transparent 60%);
 }
 /* one sheen sweeping across the board as it appears (moved by background-position, so it never overflows the box) */
 .board-box::before {
@@ -1839,8 +1862,15 @@ input, select { border-color: var(--line); border-radius: 10px; background-color
 @keyframes board-in { from { opacity: 0; transform: perspective(900px) rotateX(9deg) scale(0.96); } }
 @keyframes board-sheen { from { opacity: 1; background-position: 100% 0; } to { opacity: 1; background-position: 0 0; } }
 
-/* pieces: a soft shadow so they stand on the board */
-.board-box [data-piece] svg { filter: var(--b-piece-shadow); transition: transform 0.14s ease; }
+/* pieces: shaded ivory and ebony, lit by a bevel, with a shadow so they stand on the board */
+.board-box [data-piece] svg, .board-ghost svg, .promo-piece svg { filter: url(#cca-bevel) var(--b-piece-shadow, drop-shadow(0 2px 1.5px rgba(10, 16, 34, 0.35))); }
+.board-box [data-piece] svg { transition: transform 0.14s ease; }
+/* light from the top left: every theme's pieces cast their shadow down and to the right */
+.board-box[data-board-theme] { --b-piece-shadow: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.3)) drop-shadow(2px 4px 3px rgba(6, 10, 24, 0.5)); }
+.board-box [data-piece^='w'] svg :is(path, circle) { stroke: #3a3328 !important; }
+/* the selected piece, faint on a legal square while you point at it */
+.board-ghost { position: absolute; inset: 0; z-index: 1; opacity: 0; pointer-events: none; transition: opacity 0.12s ease; }
+@media (hover: hover) { .board-sq:hover > .board-ghost { opacity: 0.5; } }
 .board-sq { transition: box-shadow 0.12s ease; }
 .board-sq.is-sel { box-shadow: inset 0 0 0 2px var(--b-hover); }
 /* hover: your own pieces lift a little when it's your move; legal targets ring */

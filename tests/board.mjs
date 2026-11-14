@@ -41,7 +41,7 @@ for (const [name, engine, opts] of [
   await open('rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
   await sq('e4').click();
   check(/radial-gradient/.test(await style('e5')), 'clicking a piece shows a dot on its legal squares');
-  check(/radial-gradient\(circle, (rgba\(0, 0, 0, 0\)|transparent) 72%/.test(await style('d5')), 'a capture square shows a ring');
+  check(/radial-gradient\(circle, (rgba\(0, 0, 0, 0\)|transparent)[ ,]/.test(await style('d5')), 'a capture square shows a ring');
   await sq('d5').click();
   await page.waitForTimeout(250);
   check((await lastSound()) === 'capture', `capture sound (${await lastSound()})`);
