@@ -55,6 +55,29 @@ export const COURSES: Course[] = [
     ],
   },
   {
+    id: 'road-1000', title: 'Road to 1000', tagline: 'Stop giving pieces away, win the ones your opponent gives you, and finish games with a mate.',
+    level: 'Beginner', rating: 'Up to 1000', icon: '🌱', tone: 'green',
+    chapters: [
+      { title: 'Keep your pieces', steps: [lesson('pieces'), lesson('blunder-check'), safety(30), puzzles('hangingPiece', 15)] },
+      { title: 'Win material', steps: [lesson('forks'), puzzles('fork', 10), lesson('pins-skewers'), puzzles('pin', 10)] },
+      { title: 'Finish the game', steps: [lesson('mating-patterns'), puzzles('mateIn1', 15), puzzles('backRankMate', 10), drill('queen-mate'), drill('rook-mate')] },
+      { title: 'A sound start', steps: [lesson('opening-rules'), opening('e5-vs-qh5'), opening('italian')] },
+      { title: 'Prove it', steps: [bot('milo'), bot('riya'), bot('kai')] },
+    ],
+  },
+  {
+    id: 'road-1200', title: 'Road to 1200', tagline: 'Sharper tactics, a repertoire you understand, simple endgames and a plan for the middlegame.',
+    level: 'Beginner', rating: '900–1200', icon: '🪜', tone: 'blue',
+    chapters: [
+      { title: 'Hidden tactics', steps: [lesson('discovered'), puzzles('discoveredAttack', 10), puzzles('skewer', 10), puzzles('capturingDefender', 10), puzzles('mateIn2', 15)] },
+      { title: 'Think before you move', steps: [lesson('time'), safety(60), puzzles('defensiveMove', 10), lesson('review-games')] },
+      { title: 'Your repertoire', steps: [lesson('repertoire-intro'), opening('e5-vs-italian'), opening('qgd'), opening('trap-fried-liver')] },
+      { title: 'Simple endgames', steps: [lesson('basic-mates'), drill('two-rooks'), lesson('kp-endgames'), drill('kp-opposition'), drill('square')] },
+      { title: 'A plan for the middlegame', steps: [lesson('center-king'), lesson('open-files'), lesson('trades')] },
+      { title: 'Prove it', steps: [bot('kai'), bot('nora')] },
+    ],
+  },
+  {
     id: 'tactics', title: 'Tactics Bootcamp', tagline: 'Forks, pins, skewers, discovered attacks and back-rank mates, drilled until you see them instantly.',
     level: 'Beginner', rating: '600–1400', icon: '⚔️', tone: 'orange',
     chapters: [
@@ -96,6 +119,18 @@ export const COURSES: Course[] = [
       { title: 'Pieces', steps: [lesson('open-files'), lesson('bishops'), lesson('pieces-activity')] },
       { title: 'The middlegame', steps: [lesson('pawn-breaks'), lesson('center-king'), lesson('trades')] },
       { title: 'Making a plan', steps: [lesson('planning'), bot('nora'), bot('hugo')] },
+    ],
+  },
+  {
+    id: 'structures', title: 'Middlegame Pawn Structures', tagline: 'The isolated queen’s pawn, the Carlsbad and hanging pawns: where the pieces belong and which break to play.',
+    level: 'Advanced', rating: '1400–2000', icon: '🏗️', tone: 'purple',
+    chapters: [
+      { title: 'Reading the structure', steps: [lesson('pawn-structure'), lesson('pawn-weaknesses'), lesson('pawn-breaks')] },
+      { title: 'The isolated queen’s pawn', steps: [lesson('iqp'), puzzles('sacrifice', 10)] },
+      { title: 'The Carlsbad structure', steps: [lesson('carlsbad'), opening('qgd')] },
+      { title: 'Hanging pawns', steps: [lesson('hanging-pawns'), lesson('trades')] },
+      { title: 'Into the endgame', steps: [lesson('passed-pawns'), puzzles('pawnEndgame', 10)] },
+      { title: 'Put it to work', steps: [bot('hugo'), bot('mira')] },
     ],
   },
   {
