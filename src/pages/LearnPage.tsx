@@ -138,15 +138,17 @@ export function LearnPage({ lessonId }: { lessonId?: string }) {
 
   return (
     <div>
-      <h1>The course</h1>
-      <p className="muted">From "what is chess" to your first FIDE rating. Each lesson is short and ends with a position to solve.</p>
-      <div className="progress big"><div style={{ width: `${(done.length / total) * 100}%` }} /></div>
-      <div className="muted small">{done.length} of {total} lessons complete</div>
-      {nextLesson && (
-        <button className="primary" style={{ margin: '14px 0' }} onClick={() => navigate(`learn/${nextLesson.id}`)}>
-          {done.length ? 'Continue' : 'Start'}: {nextLesson.title} →
-        </button>
-      )}
+      <div className="page-head">
+        <h1>Lessons</h1>
+        <p className="muted">From "what is chess" to your first FIDE rating. Each lesson is short and ends with a position to solve. Want a guided path? Try the <a href="#/courses">courses</a>.</p>
+        <div className="progress big"><div style={{ width: `${(done.length / total) * 100}%` }} /></div>
+        <div className="muted small">{done.length} of {total} lessons complete</div>
+        {nextLesson && (
+          <button className="primary" style={{ marginTop: 14 }} onClick={() => navigate(`learn/${nextLesson.id}`)}>
+            {done.length ? 'Continue' : 'Start'}: {nextLesson.title} →
+          </button>
+        )}
+      </div>
       {CHAPTERS.map((c) => (
         <section key={c.id} className="chapter">
           <h2>{c.title}</h2>

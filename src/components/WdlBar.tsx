@@ -1,8 +1,8 @@
 // Win / draw / loss bar: a diverging part-to-whole bar (light pole = White wins, gray = draws,
 // dark pole = Black wins). Steps validated against the panel surface: all >= 3:1, ΔE >= 19 apart.
 const SEGMENTS = [
-  { key: 'w', label: 'White wins', fill: '#f0efed', ink: '#312e2b' },
-  { key: 'd', label: 'Draws', fill: '#b3b1ad', ink: '#312e2b' },
+  { key: 'w', label: 'White wins', fill: '#eef1f6', ink: '#0f1522' },
+  { key: 'd', label: 'Draws', fill: '#b3b1ad', ink: '#0f1522' },
   { key: 'b', label: 'Black wins', fill: '#75716c', ink: '#ffffff' },
 ] as const;
 

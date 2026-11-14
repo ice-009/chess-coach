@@ -43,6 +43,13 @@ export const KEYS = {
   quickReviews: 'cca-quick-reviews', // game → what Quick Review found (src/lib/quickReviews.ts)
   safety: 'cca-safety', // "Is it safe?" drill: best streak, totals, missed positions
   deck: 'cca-deck', // the review deck: every card and its FSRS memory state (src/lib/deck.ts)
+  botRecord: 'cca-bot-record', // bot slug → { w, d, l }: your score against each bot
+  botGames: 'cca-bot-games', // your last games against the bots (this device only)
+  botUnlockAll: 'cca-bot-unlock-all', // play any bot without climbing the ladder first
+  coursesDone: 'cca-courses-done', // course step id → when you completed it
+  themeSolved: 'cca-theme-solved', // puzzle theme → puzzles solved in that theme
+  themeResults: 'cca-theme-results', // puzzle theme → { ok, miss }: rated attempts solved and missed
+  boardTheme: 'cca-board-theme', // board colour theme (src/lib/boardTheme.ts)
 };
 
 export function getMe(): string {

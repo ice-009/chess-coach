@@ -15,7 +15,7 @@ const PAGE = 50;
 const TIME_ICON: Record<string, ReactNode> = {
   bullet: <svg viewBox="0 0 24 24" fill="#e3aa24"><path d="M5 15.5L14.5 6a3.5 3.5 0 0 1 5 5L10 20.5H5z" /></svg>,
   blitz: <svg viewBox="0 0 24 24" fill="#f7c631"><path d="M13 2L4 14h6l-1 8 9-12h-6z" /></svg>,
-  rapid: <svg viewBox="0 0 24 24" fill="none" stroke="#81b64c" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l3 2M9 2h6" /></svg>,
+  rapid: <svg viewBox="0 0 24 24" fill="none" stroke="#58c35c" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l3 2M9 2h6" /></svg>,
   daily: <svg viewBox="0 0 24 24" fill="#f7c631"><circle cx="12" cy="12" r="5" /><path d="M12 1v3M12 20v3M1 12h3M20 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="#f7c631" strokeWidth="2" /></svg>,
 };
 

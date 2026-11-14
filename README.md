@@ -77,14 +77,22 @@ The layout is tuned for the iPad Air 11" in both orientations (and works on othe
 - **Puzzles.** About 280,000 rated puzzles from the Lichess puzzle database (CC0), from beginner to master, tagged by theme. Modes:
   - *Rated*: puzzles near your puzzle rating, which adapts as you solve (a hint, a wrong move or "show solution" counts as a miss).
   - *Themes*: hanging pieces, forks, pins, skewers, mates in 1/2/3, back-rank mates, discovered attacks, endgames and more.
-  - *Puzzle Rush*: 3 minutes, 3 strikes, rising difficulty.
+  - *Puzzle Rush*: 3 strikes, rising difficulty, in 3-minute, 5-minute or Survival (no clock) mode.
   - *Review*: every missed puzzle comes back after 1, 3, 7 and 21 days until you solve it cleanly.
   - *My mistakes*: puzzles made from your own analysed games.
+- **Play: bots and the live coach.**
+  - *Ten bots* from Pip (≈400) to Titan (full Stockfish), each with a personality and a style (attacker, solid, trickster, gambiteer, endgame grinder) that shapes which moves it likes, and favourite openings it plays from its own book. Ratings are estimates.
+  - *Time controls* (3|2, 5|3, 10 min, 15|10 or no clock); the bot spends realistic time on its moves.
+  - *Play with the coach*: every move you make is graded (Best … Blunder) with the reason; a blunder is stopped before the bot answers ("Wait! Your queen can be taken on g6: hxg6") so you can take it back; after the bot moves the coach says what it threatens; hints come in steps (the idea, then the piece, then the move). The coach runs its own engine so it never slows the bot.
+  - Your score against each bot (synced with your account), the next bot to beat, and your recent bot games, each one reviewable later.
+- **Courses.** Eight step-by-step paths (Chess Foundations, Stop Blundering, Tactics Bootcamp, A Club Player’s Repertoire, Endgame Essentials, Strategy and Planning, Attack the King, Road to 1500) built from the lessons, puzzle themes, drills, openings and bots. Steps tick themselves off from your progress (lessons read, puzzles solved in a theme, drills won, bots beaten) and can also be marked by hand.
 - **Practice.**
-  - *Play the computer* at seven levels (Beginner to Master), from the start or any position, then review the game.
   - *Endgame drills*: 12 must-know endgames (queen/rook/two-rook mates, opposition, key squares, the square rule, Lucena, Philidor, rook-pawn draw). Win the wins against best defence; hold the draws. Each position was checked with Stockfish.
   - *Board vision*: name-the-square against the clock, as White or Black.
 - **Insights (weakness report).** From your last three months of chess.com games: results by color, how your games end (checkmated, resigned, on time), your best and worst openings, your rating trend. One click analyses your last 10 or 25 games and breaks your mistakes down by cause (hung pieces, allowed tactics, missed wins, premoves/rushing, time trouble) and phase, then recommends the training that fixes your biggest leaks.
+  - *Advanced stats*: accuracy by phase (opening, middlegame, endgame) with your weakest phase flagged, how often you convert won positions and save lost ones, accuracy in wins/draws/losses, which piece you moved when you blundered, seconds per move through the game, and your score by opponent rating, day of the week, time of day and game length.
+  - Analysis runs in the background: *Analyse all* keeps going while you use the rest of the app.
+  - Game Review's report also shows each player's accuracy per phase.
 
 Set up the puzzles once from the app (Puzzles tab) or with `npm run puzzles:update` (downloads ~300 MB, builds in seconds).
 
@@ -130,4 +138,8 @@ npm run validate     # replays every opening line, classic game and lesson posit
 npm run test:smoke   # main flows in a real browser (app must be running; pass its URL after --)
 npm run test:layout  # laptop, iPad (landscape/portrait) and phone sizes: no sideways scrolling, boards fit
 npm run test:quiz    # plays opening quizzes as White, Black and both colours, with and without mistakes
+npm run test:play    # bots, the live coach (blunder warning, take-back, grades, hints), saved bot games, courses
+npm run test:bots    # bot ladder, opening books, styles and move choice
+npm run test:stats   # advanced stats on hand-made games
+npm run test:explain # how many moves the review can explain, over the classic games (a report, not pass/fail)
 ```

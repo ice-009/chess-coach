@@ -20,6 +20,7 @@ const newer = (a: Entry, b: Entry) => (b.t > a.t ? b.v : a.v);
 type ById = { id: string; date: number };
 type Rating = { rating: number; games: number; history: { t: number }[] };
 type Day = Rec<number>;
+type Tally = { ok: number; miss: number };
 type Quiz = Rec<Partial<Rec<{ date: number }>>>;
 
 /** How each synced key combines two copies (`a` is this device's). Keys without one keep the newer copy. */
@@ -28,6 +29,21 @@ const MERGE: Record<string, (a: Entry, b: Entry) => unknown> = {
   [KEYS.openingsDone]: (a, b) => maxPerKey(a.v as Rec<number>, b.v as Rec<number>),
   [KEYS.drillsDone]: (a, b) => maxPerKey(a.v as Rec<number>, b.v as Rec<number>),
   [KEYS.visionBest]: (a, b) => maxPerKey(a.v as Rec<number>, b.v as Rec<number>),
+  [KEYS.botRecord]: (a, b) => {
+    const [x, y] = [a.v as Rec<Rec<number>>, b.v as Rec<Rec<number>>];
+    const out: Rec<Rec<number>> = { ...y };
+    for (const [bot, r] of Object.entries(x)) out[bot] = maxPerKey(out[bot] ?? {}, r);
+    return out;
+  },
+  [KEYS.coursesDone]: (a, b) => ({ ...(b.v as Rec<number>), ...(a.v as Rec<number>) }),
+  [KEYS.themeSolved]: (a, b) => maxPerKey(a.v as Rec<number>, b.v as Rec<number>),
+  // per-theme puzzle results: for each theme, the copy with more attempts
+  [KEYS.themeResults]: (a, b) => {
+    const out = { ...(a.v as Rec<Tally>) };
+    const n = (t?: Tally) => (t ? t.ok + t.miss : -1);
+    for (const [k, t] of Object.entries(b.v as Rec<Tally>)) if (n(t) > n(out[k])) out[k] = t;
+    return out;
+  },
   [KEYS.rushBest]: (a, b) => Math.max(Number(a.v) || 0, Number(b.v) || 0),
   [KEYS.puzzlesSolved]: (a, b) => {
     const out = { ...(a.v as Rec<boolean>) };

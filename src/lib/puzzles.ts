@@ -2,6 +2,7 @@
 import { KEYS, load, save } from './storage';
 import { AGAIN, GOOD, addCard, dueCards, gradeCard, loadDeck } from './deck';
 import { STATIC_HOST } from './host';
+import type { ThemeResults } from './advancedStats';
 
 export interface Puzzle {
   id: string;
@@ -121,13 +122,26 @@ export interface PuzzleRating {
 export const START_RATING = 1000;
 export const getRating = (): PuzzleRating => load(KEYS.puzzleRating, { rating: START_RATING, games: 0, history: [] });
 
-export function updateRating(puzzleRating: number, solved: boolean): { before: number; after: number } {
+/** Rates one attempt. Pass the puzzle's themes to also count it in your per-theme success rates. */
+export function updateRating(puzzleRating: number, solved: boolean, themes: string[] = []): { before: number; after: number } {
+  if (themes.length) recordThemeResults(themes, solved);
   const s = getRating();
   const k = s.games < 20 ? 60 : s.games < 60 ? 32 : 20;
   const expected = 1 / (1 + 10 ** ((puzzleRating - s.rating) / 400));
   const after = Math.max(400, Math.round(s.rating + k * ((solved ? 1 : 0) - expected)));
   save(KEYS.puzzleRating, { rating: after, games: s.games + 1, history: [...s.history, { t: Date.now(), r: after }].slice(-400) });
   return { before: s.rating, after };
+}
+
+/** Adds one rated attempt to each of the puzzle's themes (read back by themeSuccess in advancedStats.ts). */
+export function recordThemeResults(themes: string[], solved: boolean) {
+  const all = load<ThemeResults>(KEYS.themeResults, {});
+  for (const t of new Set(themes)) {
+    const r = (all[t] ??= { ok: 0, miss: 0 });
+    if (solved) r.ok++;
+    else r.miss++;
+  }
+  save(KEYS.themeResults, all);
 }
 
 // ── Spaced repetition: a puzzle you miss goes into your review deck (src/lib/deck.ts, scheduled by FSRS) ──
