@@ -100,7 +100,9 @@ export function Nav({ active }: { active: string }) {
         </a>
         <nav ref={navRef}>
           <span className="nav-ind" aria-hidden="true" />
-          {TABS.map(link)}
+          {TABS.filter((t) => t.primary).map(link)}
+          <span className="side-group" aria-hidden="true">More</span>
+          {TABS.filter((t) => !t.primary).map(link)}
           <button className={`side-link more-btn ${more || activeIsSecondary ? 'on' : ''}`} onClick={() => setMore((m) => !m)} aria-expanded={more}>
             <span className="side-icon">
               <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>

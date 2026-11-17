@@ -6,7 +6,7 @@ export function SyncBadge({ account, compact }: { account: AccountState; compact
   if (account.status === 'loading') return null;
   if (account.status === 'signedOut' || account.status === 'unavailable')
     return compact ? (
-      <a className="btn-green head-signin" href="#/account">Sign in</a>
+      <a className="btn-secondary head-signin" href="#/account">Sign in</a>
     ) : (
       <a className="sync-badge off" href="#/account">Not signed in · progress stays on this device</a>
     );
