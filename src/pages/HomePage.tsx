@@ -1,7 +1,7 @@
 // The dashboard. Built around four questions, in this order: what should I do now (next up + today's plan),
 // where am I (ratings and their trend), what is going wrong (focus areas from recent games), and am I getting
 // better (skills, activity, the road to 1500).
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ALL_LESSONS } from '../data/lessons';
 import { DRILLS } from '../data/drills';
@@ -23,172 +23,36 @@ import { clockSummary, tiltCheck } from '../lib/clockStats';
 import type { ClockSummary } from '../lib/clockStats';
 import { commonMistake } from '../lib/quickReviews';
 import { SyncBadge } from '../components/SyncBadge';
-import { BOTS, lockedBy } from '../lib/botBrain';
+import { BOTS } from '../lib/botBrain';
 import { botRecords } from '../lib/botGames';
 import { COURSES, courseProgress, progressSnapshot, stepView } from '../lib/courses';
-import { CLASSICS } from '../data/classics';
-import { parseLine } from '../lib/chess';
-import { Board } from '../components/Board';
-import { reducedMotion, useCountUp } from '../lib/useCountUp';
+import { NavIcons } from '../components/icons';
 
-// ── the living hero: a famous game playing itself, and the bots taking turns to say hello ──
-const HERO_GAMES = ['opera', 'immortal', 'evergreen', 'reti-tartakower', 'lasker-thomas'].map((id) => CLASSICS.find((c) => c.id === id)!).filter(Boolean);
-const PLY_MS = 1300;
-const HOLD_MS = 4000; // on the final position before the next game
-
-/** True while the tab is visible and the element is on screen: the autoplay only runs then. */
-function useLive<T extends Element>() {
-  const ref = useRef<T>(null);
-  const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
-  const [onScreen, setOnScreen] = useState(true);
-  useEffect(() => {
-    const f = () => setVisible(document.visibilityState === 'visible');
-    document.addEventListener('visibilitychange', f);
-    const io = new IntersectionObserver((es) => setOnScreen(es.some((e) => e.isIntersecting)));
-    if (ref.current) io.observe(ref.current);
-    return () => {
-      document.removeEventListener('visibilitychange', f);
-      io.disconnect();
-    };
-  }, []);
-  return [ref, visible && onScreen] as const;
-}
-
-function Hero() {
-  const [ref, live] = useLive<HTMLElement>();
-  const still = useMemo(reducedMotion, []);
-  const [paused, setPaused] = useState(false);
-  const running = live && !still && !paused;
-
-  // the game: a different one each day, then the next when it ends
-  const [g, setG] = useState(() => Math.floor(Date.now() / 86400_000) % HERO_GAMES.length);
-  const game = HERO_GAMES[g];
-  const line = useMemo(() => parseLine(game.moves), [game]);
-  const [ply, setPly] = useState(() => (still ? line.length : 0)); // reduced motion: the famous final position
-  useEffect(() => {
-    if (!running) return;
-    const end = ply >= line.length;
-    const t = window.setTimeout(() => {
-      if (end) {
-        setG((i) => (i + 1) % HERO_GAMES.length);
-        setPly(0);
-      } else setPly((n) => n + 1);
-    }, end ? HOLD_MS : ply === 0 ? 900 : PLY_MS);
-    return () => window.clearTimeout(t);
-  }, [running, ply, line.length]);
-  const fen = ply ? line[ply - 1].fenAfter : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-  const last = ply ? line[ply - 1] : null;
-
-  // the bots: the open ones take turns in the speech bubble; the main button plays the next one to beat
-  const rec = botRecords();
-  const open = BOTS.filter((b) => !lockedBy(b.slug, rec));
-  const next = BOTS.find((b) => !(rec[b.slug]?.w > 0)) ?? BOTS[BOTS.length - 1];
-  const [bi, setBi] = useState(() => Math.max(0, open.findIndex((b) => b.slug === next.slug)));
-  useEffect(() => {
-    if (!running || open.length < 2) return;
-    const t = window.setTimeout(() => setBi((i) => i + 1), 4800); // restarts when you pick one
-    return () => window.clearTimeout(t);
-  }, [running, open.length, bi]);
-  const bot = open[bi % open.length] ?? next;
-
-  return (
-    <section className="hero" ref={ref}>
-      <div className="hero-main">
-        <a className={`hero-bot tone-${bot.tone}`} href={`#/practice?bot=${bot.slug}`} aria-label={`Play ${bot.name} (${bot.rating})`}>
-          <span className="bot-face md" key={'f' + bot.slug} aria-hidden="true">{bot.avatar}</span>
-          <span className="hero-speech" key={bot.slug}>
-            <b>{bot.name} <span className="hero-rating">{bot.rating}</span></b>
-            <span>{bot.greet}</span>
-          </span>
-        </a>
-        <h2>Fancy a game?</h2>
-        <p className="muted">Ten bots from {BOTS[0].rating} to {BOTS[BOTS.length - 1].rating}, each with its own style and a coach at your side. Beat one to unlock the next.</p>
-        <div className="hero-cta">
-          <a className="btn-green" href={`#/practice?bot=${next.slug}`}>Play {next.name} ({next.rating}) →</a>
-          <a className="btn-secondary" href="#/train">Today’s puzzles</a>
-        </div>
-        <div className="hero-lineup" aria-label="The bots">
-          {BOTS.map((b) => {
-            const locked = !open.includes(b);
-            return (
-              <button
-                key={b.slug}
-                className={`bot-face sm tone-${b.tone} ${b === bot ? 'on' : ''} ${locked ? 'locked' : ''}`}
-                title={`${b.name} (${b.rating})${locked ? ': beat the bot before to unlock' : ''}`}
-                aria-label={`${b.name} (${b.rating})`}
-                onPointerEnter={(e) => e.pointerType === 'mouse' && !locked && setBi(open.indexOf(b))}
-                onClick={() => (locked ? setBi(open.length - 1) : b === bot ? navigate(`practice?bot=${b.slug}`) : setBi(open.indexOf(b)))}
-              >
-                {b.avatar}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <figure className="hero-game">
-        <a className="hero-board" href={`#/masters/classic/${game.id}`} aria-label={`${game.title}: watch and study it in Masters`}>
-          <Board id="hero-board" fen={fen} hideCoords maxWidth={260} silent />
-        </a>
-        <figcaption>
-          <div className="row-between">
-            <a href={`#/masters/classic/${game.id}`}><b>{game.title}</b></a>
-            {!still && (
-              <button className="hero-pause" onClick={() => setPaused((p) => !p)} aria-label={paused ? 'Play' : 'Pause'} aria-pressed={paused}>
-                {paused ? '▶' : '❚❚'}
-              </button>
-            )}
-          </div>
-          <span className="muted small">{game.white.split(' ').at(-1)} – {game.black.split(' ').at(-1)}, {game.year}{last ? ` · ${Math.ceil(ply / 2)}${ply % 2 ? '.' : '…'} ${last.san}` : ''}</span>
-          <span className="hero-progress" aria-hidden="true"><span style={{ width: `${(ply / line.length) * 100}%` }} /></span>
-        </figcaption>
-      </figure>
-    </section>
-  );
-}
-
-/** A KPI number that counts up the first time you see it. */
-function CountUp({ value }: { value: number }) {
-  const [ref, n] = useCountUp<HTMLSpanElement>(value);
-  return <span ref={ref}>{n}</span>;
-}
-
-/** Shortcuts into the training paths: your course, the next bot to beat, your stats. */
-function JumpIn() {
+/** Four plain ways in, each with the one thing to do next there. */
+function Choices() {
   const snap = progressSnapshot();
-  const course =
-    COURSES.map((c) => ({ c, p: courseProgress(c, snap) })).find((x) => x.p.done > 0 && x.p.done < x.p.total) ??
-    { c: COURSES[1], p: courseProgress(COURSES[1], snap) };
-  const step = course.p.next ? stepView(course.p.next, snap) : null;
+  const course = COURSES.map((c) => ({ c, p: courseProgress(c, snap) })).find((x) => x.p.done > 0 && x.p.done < x.p.total);
+  const step = course?.p.next ? stepView(course.p.next, snap) : null;
   const rec = botRecords();
   const bot = BOTS.find((b) => !(rec[b.slug]?.w > 0)) ?? BOTS[BOTS.length - 1];
-  const beaten = BOTS.filter((b) => rec[b.slug]?.w > 0).length;
+  const items = [
+    { icon: 'learn', title: 'Learn', sub: step ? `Continue: ${step.title}` : 'Short lessons, from the basics up', href: step?.href ?? '#/learn' },
+    { icon: 'train', title: 'Puzzles', sub: 'Tactics at your level', href: '#/train' },
+    { icon: 'practice', title: 'Play', sub: `Next opponent: ${bot.name} (${bot.rating})`, href: `#/practice?bot=${bot.slug}` },
+    { icon: 'games', title: 'Review', sub: 'See what went wrong in a game', href: '#/games' },
+  ];
   return (
-    <section className="jump">
-      <a className={`jump-card tone-${course.c.tone}`} href={step?.href ?? `#/courses/${course.c.id}`}>
-        <span className="jump-art">{course.c.icon}</span>
-        <span className="jump-main">
-          <span className="jump-eyebrow">{course.p.done ? 'Continue your course' : 'Start a course'} · {course.p.pct}%</span>
-          <b>{course.c.title}</b>
-          <span className="muted small">{step ? `Next: ${step.title}` : 'Complete!'}</span>
-        </span>
-      </a>
-      <a className={`jump-card tone-${bot.tone}`} href={`#/practice?bot=${bot.slug}`}>
-        <span className="jump-art round">{bot.avatar}</span>
-        <span className="jump-main">
-          <span className="jump-eyebrow">Next bot to beat · {beaten}/{BOTS.length} beaten</span>
-          <b>{bot.name} ({bot.rating})</b>
-          <span className="muted small">{bot.note}</span>
-        </span>
-      </a>
-      <a className="jump-card tone-cyan" href="#/insights">
-        <span className="jump-art">📊</span>
-        <span className="jump-main">
-          <span className="jump-eyebrow">Insights</span>
-          <b>Your accuracy by phase</b>
-          <span className="muted small">Converting won games, best time of day, which piece blunders</span>
-        </span>
-      </a>
-    </section>
+    <nav className="choices" aria-label="What to do">
+      {items.map((it) => (
+        <a key={it.title} className="choice" href={it.href}>
+          <span className="choice-icon" aria-hidden="true">{NavIcons[it.icon]}</span>
+          <span className="choice-main">
+            <b>{it.title}</b>
+            <span className="muted small">{it.sub}</span>
+          </span>
+        </a>
+      ))}
+    </nav>
   );
 }
 
@@ -604,16 +468,28 @@ export function HomePage() {
         </div>
       </header>
 
-      <Hero />
+      <section className="next-up">
+        <div className="next-main">
+          <div className="eyebrow">{next ? 'Next up' : 'Today'}</div>
+          <h2>{next ? next.short : 'All done for today 🎉'}</h2>
+          <p>{next ? next.why : 'Great work. If you want more, a three-minute Puzzle Rush is a good finisher.'}</p>
+          <a className="btn-green" href={next?.href ?? '#/train/rush'}>{next ? 'Continue →' : 'Puzzle Rush →'}</a>
+        </div>
+        <div className="next-side">
+          <Ring done={planDone} total={plan.length} />
+          <div>
+            <div className="streak"><span aria-hidden="true">🔥</span> <b>{s}</b> day{s === 1 ? '' : 's'}</div>
+            <div className="muted small">{s ? 'training streak' : 'Start a streak today'}</div>
+          </div>
+        </div>
+      </section>
+
+      <Choices />
 
       {account.status === 'signedOut' && !nudgeHidden && (
-        <div className="nudge">
-          <span className="nudge-icon">☁️</span>
-          <div><b>Keep your progress on every device.</b> <span className="muted">Create a free account (no email) and your lessons, puzzles and ratings follow you between iPad, phone and laptop.</span></div>
-          <div className="row">
-            <button className="btn-green" onClick={() => navigate('account')}>Create account</button>
-            <button className="btn-ghost" aria-label="Hide" onClick={() => { save(KEYS.me + '-nudge-hidden', true); setNudgeHidden(true); }}>✕</button>
-          </div>
+        <div className="nudge slim">
+          <span>Your progress is saved on this device. <a href="#/account">Create a free account</a> to keep it on every device.</span>
+          <button className="btn-ghost" aria-label="Hide" onClick={() => { save(KEYS.me + '-nudge-hidden', true); setNudgeHidden(true); }}>✕</button>
         </div>
       )}
 
@@ -633,24 +509,6 @@ export function HomePage() {
         </div>
       )}
 
-      <section className="next-up">
-        <div className="next-main">
-          <div className="eyebrow">{next ? 'Next up' : 'Today'}</div>
-          <h2>{next ? next.short : 'All done for today 🎉'}</h2>
-          <p>{next ? next.why : 'Great work. If you want more, a three-minute Puzzle Rush is a good finisher.'}</p>
-          <a className="btn-green" href={next?.href ?? '#/train/rush'}>{next ? 'Continue →' : 'Puzzle Rush →'}</a>
-        </div>
-        <div className="next-side">
-          <Ring done={planDone} total={plan.length} />
-          <div>
-            <div className="streak"><span aria-hidden="true">🔥</span> <b>{s}</b> day{s === 1 ? '' : 's'}</div>
-            <div className="muted small">{s ? 'training streak' : 'Start a streak today'}</div>
-          </div>
-        </div>
-      </section>
-
-      <JumpIn />
-
       <section className="kpis">
         {!me ? (
           <ConnectChessCom onSet={setMe} />
@@ -660,7 +518,7 @@ export function HomePage() {
           tiles.map((cls) => (
             <a key={cls} className="kpi" href={`#/games/${me}`}>
               <span className="kpi-label">{cls[0].toUpperCase() + cls.slice(1)}</span>
-              <b className="kpi-value">{ratingOf(cls) != null ? <CountUp value={ratingOf(cls)!} /> : null}</b>
+              <b className="kpi-value">{ratingOf(cls) ?? null}</b>
               <Delta n={deltaOf(cls, 30)} span="in 30 days" />
               <Spark values={historyOf(cls).map((p) => p.y)} />
             </a>
@@ -670,14 +528,14 @@ export function HomePage() {
         )}
         <a className="kpi" href="#/train">
           <span className="kpi-label">Puzzles</span>
-          <b className="kpi-value"><CountUp value={puzzle.rating} /></b>
+          <b className="kpi-value">{puzzle.rating}</b>
           {puzzle.games ? <Delta n={puzzleDelta} span="this week" /> : <span className="delta flat">not rated yet</span>}
           <Spark values={puzzle.history.slice(-40).map((h) => h.r)} />
         </a>
         {month.length > 0 && (
           <a className="kpi" href="#/insights">
             <span className="kpi-label">Last 30 days</span>
-            <b className="kpi-value"><CountUp value={scorePct(rec)} />%</b>
+            <b className="kpi-value">{scorePct(rec)}%</b>
             <span className="muted small">{rec.w} won · {rec.d} drawn · {rec.l} lost</span>
             <div className="wdl-mini" aria-hidden="true">
               <span className="w" style={{ flexGrow: rec.w }} />
